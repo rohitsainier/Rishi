@@ -11,7 +11,8 @@ import SwiftUI
 struct RishiApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppRouter.shared.rootView()
         }
     }
 }
+

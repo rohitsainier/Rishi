@@ -6,3 +6,9 @@
 //
 
 import Foundation
+
+struct SystemPrompt: Identifiable, Hashable {
+    var id: String { text }
+    let text: String
+    let category: String
+}

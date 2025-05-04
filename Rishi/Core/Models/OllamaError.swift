@@ -6,3 +6,20 @@
 //
 
 import Foundation
+
+enum OllamaError: Error, LocalizedError {
+    case invalidURL
+    case invalidResponse
+    case noModels
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "❌ Invalid API URL."
+        case .invalidResponse:
+            return "❌ Could not decode the server response."
+        case .noModels:
+            return "❌ No models available download atleast one"
+        }
+    }
+}

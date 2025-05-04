@@ -8,18 +8,54 @@
 
 /* Begin PBXBuildFile section */
 		917FF5F22DC74B7F00843CBB /* RishiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF5F12DC74B7F00843CBB /* RishiApp.swift */; };
-		917FF5F42DC74B7F00843CBB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF5F32DC74B7F00843CBB /* ContentView.swift */; };
 		917FF5F62DC74B8000843CBB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917FF5F52DC74B8000843CBB /* Assets.xcassets */; };
 		917FF5F92DC74B8000843CBB /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917FF5F82DC74B8000843CBB /* Preview Assets.xcassets */; };
+		917FF6062DC74D8F00843CBB /* Dependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6052DC74D8F00843CBB /* Dependencies.swift */; };
+		917FF6082DC74DAA00843CBB /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6072DC74DAA00843CBB /* Router.swift */; };
+		917FF60B2DC74DD400843CBB /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF60A2DC74DD400843CBB /* ChatMessage.swift */; };
+		917FF60E2DC74DEF00843CBB /* ChatServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF60D2DC74DEF00843CBB /* ChatServiceProtocol.swift */; };
+		917FF6112DC74E1500843CBB /* OllamaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6102DC74E1500843CBB /* OllamaService.swift */; };
+		917FF6142DC74E3300843CBB /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6132DC74E3300843CBB /* ChatViewModel.swift */; };
+		917FF6172DC74E5400843CBB /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6162DC74E5400843CBB /* ChatView.swift */; };
+		917FF6192DC74E6300843CBB /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6182DC74E6300843CBB /* SidebarView.swift */; };
+		917FF61B2DC74E7000843CBB /* MessageInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF61A2DC74E7000843CBB /* MessageInputView.swift */; };
+		917FF61E2DC74E9E00843CBB /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF61D2DC74E9E00843CBB /* MessageBubble.swift */; };
+		917FF6202DC7511E00843CBB /* OllamaError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF61F2DC7511E00843CBB /* OllamaError.swift */; };
+		917FF6242DC7694100843CBB /* SpeechServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6232DC7694100843CBB /* SpeechServiceProtocol.swift */; };
+		917FF6272DC7699B00843CBB /* SpeechRecognizerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6262DC7699B00843CBB /* SpeechRecognizerManager.swift */; };
+		917FF62B2DC773B100843CBB /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 917FF62A2DC773B100843CBB /* MarkdownUI */; };
+		917FF62E2DC77E3800843CBB /* Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF62D2DC77E3800843CBB /* Keyboard.swift */; };
+		917FF6302DC77F9600843CBB /* SystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF62F2DC77F9600843CBB /* SystemPrompt.swift */; };
+		917FF6322DC780A200843CBB /* SystemPromptSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */; };
+		917FF6342DC784F700843CBB /* ModelPickerSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6332DC784F700843CBB /* ModelPickerSheetView.swift */; };
+		917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6352DC786E300843CBB /* ChatHeaderBar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		917FF5EE2DC74B7F00843CBB /* Rishi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rishi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		917FF5F12DC74B7F00843CBB /* RishiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RishiApp.swift; sourceTree = "<group>"; };
-		917FF5F32DC74B7F00843CBB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		917FF5F52DC74B8000843CBB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		917FF5F82DC74B8000843CBB /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		917FF5FA2DC74B8000843CBB /* Rishi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Rishi.entitlements; sourceTree = "<group>"; };
+		917FF6052DC74D8F00843CBB /* Dependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dependencies.swift; sourceTree = "<group>"; };
+		917FF6072DC74DAA00843CBB /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
+		917FF60A2DC74DD400843CBB /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		917FF60D2DC74DEF00843CBB /* ChatServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatServiceProtocol.swift; sourceTree = "<group>"; };
+		917FF6102DC74E1500843CBB /* OllamaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaService.swift; sourceTree = "<group>"; };
+		917FF6132DC74E3300843CBB /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		917FF6162DC74E5400843CBB /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		917FF6182DC74E6300843CBB /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		917FF61A2DC74E7000843CBB /* MessageInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputView.swift; sourceTree = "<group>"; };
+		917FF61D2DC74E9E00843CBB /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		917FF61F2DC7511E00843CBB /* OllamaError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaError.swift; sourceTree = "<group>"; };
+		917FF6232DC7694100843CBB /* SpeechServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechServiceProtocol.swift; sourceTree = "<group>"; };
+		917FF6262DC7699B00843CBB /* SpeechRecognizerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizerManager.swift; sourceTree = "<group>"; };
+		917FF6282DC76CB400843CBB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		917FF62D2DC77E3800843CBB /* Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyboard.swift; sourceTree = "<group>"; };
+		917FF62F2DC77F9600843CBB /* SystemPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemPrompt.swift; sourceTree = "<group>"; };
+		917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemPromptSheetView.swift; sourceTree = "<group>"; };
+		917FF6332DC784F700843CBB /* ModelPickerSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerSheetView.swift; sourceTree = "<group>"; };
+		917FF6352DC786E300843CBB /* ChatHeaderBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHeaderBar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,6 +63,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				917FF62B2DC773B100843CBB /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -52,8 +89,12 @@
 		917FF5F02DC74B7F00843CBB /* Rishi */ = {
 			isa = PBXGroup;
 			children = (
-				917FF5F12DC74B7F00843CBB /* RishiApp.swift */,
-				917FF5F32DC74B7F00843CBB /* ContentView.swift */,
+				917FF6282DC76CB400843CBB /* Info.plist */,
+				917FF6042DC74C9C00843CBB /* Resources */,
+				917FF6032DC74C8E00843CBB /* Presentation */,
+				917FF6022DC74C8800843CBB /* Data */,
+				917FF6012DC74C8100843CBB /* Core */,
+				917FF6002DC74C7900843CBB /* App */,
 				917FF5F52DC74B8000843CBB /* Assets.xcassets */,
 				917FF5FA2DC74B8000843CBB /* Rishi.entitlements */,
 				917FF5F72DC74B8000843CBB /* Preview Content */,
@@ -67,6 +108,124 @@
 				917FF5F82DC74B8000843CBB /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		917FF6002DC74C7900843CBB /* App */ = {
+			isa = PBXGroup;
+			children = (
+				917FF5F12DC74B7F00843CBB /* RishiApp.swift */,
+				917FF6052DC74D8F00843CBB /* Dependencies.swift */,
+				917FF6072DC74DAA00843CBB /* Router.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		917FF6012DC74C8100843CBB /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				917FF60C2DC74DE300843CBB /* Protocols */,
+				917FF6092DC74DC900843CBB /* Models */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		917FF6022DC74C8800843CBB /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6252DC7698900843CBB /* Manager */,
+				917FF60F2DC74E0A00843CBB /* Network */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		917FF6032DC74C8E00843CBB /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				917FF62C2DC77E2900843CBB /* Utility */,
+				917FF61C2DC74E9200843CBB /* Components */,
+				917FF6152DC74E4B00843CBB /* Views */,
+				917FF6122DC74E2A00843CBB /* ViewModels */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		917FF6042DC74C9C00843CBB /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		917FF6092DC74DC900843CBB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				917FF60A2DC74DD400843CBB /* ChatMessage.swift */,
+				917FF61F2DC7511E00843CBB /* OllamaError.swift */,
+				917FF62F2DC77F9600843CBB /* SystemPrompt.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		917FF60C2DC74DE300843CBB /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				917FF60D2DC74DEF00843CBB /* ChatServiceProtocol.swift */,
+				917FF6232DC7694100843CBB /* SpeechServiceProtocol.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		917FF60F2DC74E0A00843CBB /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6102DC74E1500843CBB /* OllamaService.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		917FF6122DC74E2A00843CBB /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6132DC74E3300843CBB /* ChatViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		917FF6152DC74E4B00843CBB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6162DC74E5400843CBB /* ChatView.swift */,
+				917FF6182DC74E6300843CBB /* SidebarView.swift */,
+				917FF61A2DC74E7000843CBB /* MessageInputView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		917FF61C2DC74E9200843CBB /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */,
+				917FF61D2DC74E9E00843CBB /* MessageBubble.swift */,
+				917FF6332DC784F700843CBB /* ModelPickerSheetView.swift */,
+				917FF6352DC786E300843CBB /* ChatHeaderBar.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		917FF6252DC7698900843CBB /* Manager */ = {
+			isa = PBXGroup;
+			children = (
+				917FF6262DC7699B00843CBB /* SpeechRecognizerManager.swift */,
+			);
+			path = Manager;
+			sourceTree = "<group>";
+		};
+		917FF62C2DC77E2900843CBB /* Utility */ = {
+			isa = PBXGroup;
+			children = (
+				917FF62D2DC77E3800843CBB /* Keyboard.swift */,
+			);
+			path = Utility;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -85,6 +244,9 @@
 			dependencies = (
 			);
 			name = Rishi;
+			packageProductDependencies = (
+				917FF62A2DC773B100843CBB /* MarkdownUI */,
+			);
 			productName = Rishi;
 			productReference = 917FF5EE2DC74B7F00843CBB /* Rishi.app */;
 			productType = "com.apple.product-type.application";
@@ -113,6 +275,9 @@
 				Base,
 			);
 			mainGroup = 917FF5E52DC74B7F00843CBB;
+			packageReferences = (
+				917FF6292DC773B100843CBB /* XCRemoteSwiftPackageReference "MarkdownUI" */,
+			);
 			productRefGroup = 917FF5EF2DC74B7F00843CBB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -139,8 +304,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				917FF5F42DC74B7F00843CBB /* ContentView.swift in Sources */,
+				917FF6082DC74DAA00843CBB /* Router.swift in Sources */,
+				917FF6062DC74D8F00843CBB /* Dependencies.swift in Sources */,
+				917FF6142DC74E3300843CBB /* ChatViewModel.swift in Sources */,
+				917FF6172DC74E5400843CBB /* ChatView.swift in Sources */,
+				917FF6302DC77F9600843CBB /* SystemPrompt.swift in Sources */,
+				917FF60B2DC74DD400843CBB /* ChatMessage.swift in Sources */,
+				917FF6272DC7699B00843CBB /* SpeechRecognizerManager.swift in Sources */,
 				917FF5F22DC74B7F00843CBB /* RishiApp.swift in Sources */,
+				917FF62E2DC77E3800843CBB /* Keyboard.swift in Sources */,
+				917FF6322DC780A200843CBB /* SystemPromptSheetView.swift in Sources */,
+				917FF6342DC784F700843CBB /* ModelPickerSheetView.swift in Sources */,
+				917FF61E2DC74E9E00843CBB /* MessageBubble.swift in Sources */,
+				917FF6192DC74E6300843CBB /* SidebarView.swift in Sources */,
+				917FF6242DC7694100843CBB /* SpeechServiceProtocol.swift in Sources */,
+				917FF6202DC7511E00843CBB /* OllamaError.swift in Sources */,
+				917FF60E2DC74DEF00843CBB /* ChatServiceProtocol.swift in Sources */,
+				917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */,
+				917FF61B2DC74E7000843CBB /* MessageInputView.swift in Sources */,
+				917FF6112DC74E1500843CBB /* OllamaService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -279,7 +461,10 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Rishi/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Voice input is used to transcribe prompts for AI chat.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Voice input is used to transcribe prompts for AI chat.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -306,7 +491,10 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Rishi/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Voice input is used to transcribe prompts for AI chat.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Voice input is used to transcribe prompts for AI chat.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -341,6 +529,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		917FF6292DC773B100843CBB /* XCRemoteSwiftPackageReference "MarkdownUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/MarkdownUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		917FF62A2DC773B100843CBB /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 917FF6292DC773B100843CBB /* XCRemoteSwiftPackageReference "MarkdownUI" */;
+			productName = MarkdownUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 917FF5E62DC74B7F00843CBB /* Project object */;
 }

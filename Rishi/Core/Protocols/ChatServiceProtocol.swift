@@ -6,3 +6,16 @@
 //
 
 import Foundation
+
+protocol ChatServiceProtocol {
+    func sendStream(
+        messages: [ChatMessage],
+        model: String,
+        systemPrompt: String?,
+        attachedImages: [Data]
+    ) async throws -> AsyncThrowingStream<String, Error>
+    
+    func stopStreaming()
+    func fetchAvailableModels() async throws -> [String]
+}
+
