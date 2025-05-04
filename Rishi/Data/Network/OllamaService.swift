@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class OllamaService: NSObject, ChatServiceProtocol, URLSessionDataDelegate {
+final class OllamaService: NSObject, URLSessionDataDelegate {
     private var continuation: AsyncThrowingStream<String, Error>.Continuation?
     private var currentTask: URLSessionDataTask?
 
@@ -111,3 +111,5 @@ final class OllamaService: NSObject, ChatServiceProtocol, URLSessionDataDelegate
         return models.compactMap { $0["name"] as? String }
     }
 }
+
+extension OllamaService: ChatServiceProtocol {}

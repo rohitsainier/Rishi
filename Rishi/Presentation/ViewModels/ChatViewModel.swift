@@ -10,7 +10,7 @@ import Combine
 
 @MainActor
 final class ChatViewModel: ObservableObject {
-    // MARK: - Active Chat Session
+    // MARK: - Published UI State
     @Published var currentInput = ""
     @Published var isStreaming = false
     @Published var attachedImages: [NSImage] = []
@@ -21,45 +21,27 @@ final class ChatViewModel: ObservableObject {
     @Published var chatHistories: [ChatHistory] = []
     @Published var currentChatId: UUID?
 
-    // Computed: current chat messages
+    // MARK: - Computed Properties
+    var currentChatTitle: String {
+        currentChat?.name ?? "Chat"
+    }
+
     var messages: [ChatMessage] {
         get {
-            guard let index = currentChatIndex else { return [] }
-            return chatHistories[index].messages
+            guard let id = currentChatId else { return [] }
+            return historyService.chatMessages(for: id)
         }
         set {
-            guard let index = currentChatIndex else { return }
-            chatHistories[index].messages = newValue
-            persistHistories()
+            guard let id = currentChatId else { return }
+            historyService.updateChatMessages(for: id, messages: newValue)
+            chatHistories = historyService.histories
         }
     }
-    
-    var currentChatTitle: String {
-        chatHistories.first(where: { $0.id == currentChatId })?.name ?? "Chat"
+
+    private var currentChat: ChatHistory? {
+        guard let id = currentChatId else { return nil }
+        return historyService.histories.first(where: { $0.id == id })
     }
-
-    private var currentChatIndex: Int? {
-        chatHistories.firstIndex(where: { $0.id == currentChatId })
-    }
-    
-
-    // MARK: - System Prompt Options
-    @Published var groupedSystemPrompts: [String: [SystemPrompt]] = [:]
-    @Published var selectedSystemPrompt: SystemPrompt
-
-    // MARK: - Speech State
-    @Published var isListening: Bool = false
-    @Published var transcribedText: String = ""
-    @Published var voiceErrorMessage: String? = nil
-
-    private var cancellables = Set<AnyCancellable>()
-
-    private let chatService: ChatServiceProtocol
-    private let speechService: SpeechServiceProtocol
-
-    // Streaming
-    private var streamingTask: Task<Void, Never>?
-    private var currentStreamingMessageId: UUID?
 
     var attachedImagesData: [Data] {
         attachedImages.compactMap {
@@ -73,12 +55,35 @@ final class ChatViewModel: ObservableObject {
         groupedSystemPrompts.keys.sorted()
     }
 
+    let groupedSystemPrompts: [String: [SystemPrompt]]
+    @Published var selectedSystemPrompt: SystemPrompt
+
+    // MARK: - Speech State
+    @Published var isListening: Bool = false
+    @Published var transcribedText: String = ""
+    @Published var voiceErrorMessage: String? = nil
+
+    // MARK: - Services
+    private let chatService: ChatServiceProtocol
+    private let speechService: SpeechServiceProtocol
+    private let historyService: ChatHistoryServiceProtocol
+
+    // MARK: - Private State
+    private var streamingTask: Task<Void, Never>?
+    private var currentStreamingMessageId: UUID?
+    private var cancellables = Set<AnyCancellable>()
+
     // MARK: - Init
-    init(chatService: ChatServiceProtocol, speechService: SpeechServiceProtocol) {
+    init(
+        chatService: ChatServiceProtocol,
+        speechService: SpeechServiceProtocol,
+        historyService: ChatHistoryServiceProtocol
+    ) {
         self.chatService = chatService
         self.speechService = speechService
+        self.historyService = historyService
 
-        let allPrompts: [SystemPrompt] = [
+        let prompts: [SystemPrompt] = [
             .init(text: "You are a helpful assistant.", category: "General"),
             .init(text: "Answer concisely and clearly.", category: "General"),
             .init(text: "Speak like Shakespeare.", category: "Creative"),
@@ -90,83 +95,41 @@ final class ChatViewModel: ObservableObject {
             .init(text: "Act as a professional programmer.", category: "Instructional")
         ]
 
-        self.groupedSystemPrompts = Dictionary(grouping: allPrompts, by: { $0.category })
-        self.selectedSystemPrompt = allPrompts.first!
+        self.groupedSystemPrompts = Dictionary(grouping: prompts, by: { $0.category })
+        self.selectedSystemPrompt = prompts.first!
 
-        loadHistories()
-        if chatHistories.isEmpty {
-            createNewChat()
-        }
+        historyService.load()
+        chatHistories = historyService.histories
+        currentChatId = historyService.currentChatId ?? historyService.histories.first?.id ?? createNewChat().id
 
         bindSpeechService()
     }
-    
-    func cancelStreamingIfNeeded() {
-        streamingTask?.cancel()
-        isStreaming = false
-    }
 
-    // MARK: - Chat History Management
-    func createNewChat() {
+    // MARK: - History Management
+    func createNewChat() -> ChatHistory {
         currentInput = ""
         attachedImages.removeAll()
         transcribedText = ""
         isStreaming = false
         streamingTask?.cancel()
 
-        let new = ChatHistory(
-            id: UUID(),
-            name: "New Chat \(chatHistories.count + 1)",
-            messages: [],
-            createdAt: Date()
-        )
-        chatHistories.insert(new, at: 0)
+        let new = historyService.createNewChat()
+        chatHistories = historyService.histories
         currentChatId = new.id
-        persistHistories()
+        return new
     }
 
     func deleteChat(id: UUID) {
-        chatHistories.removeAll { $0.id == id }
-        if currentChatId == id {
-            currentChatId = chatHistories.first?.id
-        }
-        persistHistories()
+        historyService.deleteChat(withId: id)
+        chatHistories = historyService.histories
+        currentChatId = historyService.currentChatId
     }
 
     func selectChat(id: UUID) {
-        self.currentChatId = id
+        currentChatId = id
     }
 
-    // Save & Load Chats
-    private func persistHistories() {
-        do {
-            let jsonData = try JSONEncoder().encode(chatHistories)
-            let url = chatStorageURL()
-            try jsonData.write(to: url)
-        } catch {
-            print("Failed to persist chat histories: \(error)")
-        }
-    }
-
-    private func loadHistories() {
-        let url = chatStorageURL()
-        do {
-            let data = try Data(contentsOf: url)
-            let histories = try JSONDecoder().decode([ChatHistory].self, from: data)
-            self.chatHistories = histories
-            self.currentChatId = histories.first?.id
-        } catch {
-            print("⚠️ Failed to load saved chats: \(error)")
-        }
-    }
-
-    private func chatStorageURL() -> URL {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("ChatHistories.json")
-    }
-
-    // MARK: - Message Streaming Logic
+    // MARK: - Streaming
     func streamMessage(model: String, systemPrompt: String?, attachedImages: [Data] = []) {
         let trimmedInput = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty || !self.attachedImages.isEmpty else { return }
@@ -174,9 +137,10 @@ final class ChatViewModel: ObservableObject {
         let userMessage = ChatMessage(
             sender: .user,
             content: trimmedInput,
-            images: self.attachedImages.isEmpty ? nil : self.attachedImages)
-
+            images: self.attachedImages.isEmpty ? nil : self.attachedImages
+        )
         messages.append(userMessage)
+
         currentInput = ""
         self.attachedImages.removeAll()
         isStreaming = true
@@ -210,6 +174,17 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    func stopMessageStreaming() {
+        chatService.stopStreaming()
+        streamingTask?.cancel()
+        isStreaming = false
+    }
+
+    func cancelStreamingIfNeeded() {
+        streamingTask?.cancel()
+        isStreaming = false
+    }
+
     private func updateAssistantMessage(content: String) {
         guard let id = currentStreamingMessageId,
               let index = messages.firstIndex(where: { $0.id == id }) else { return }
@@ -219,16 +194,10 @@ final class ChatViewModel: ObservableObject {
             sender: .assistant,
             content: content
         )
-        persistHistories()
+        chatHistories = historyService.histories
     }
 
-    func stopMessageStreaming() {
-        chatService.stopStreaming()
-        streamingTask?.cancel()
-        isStreaming = false
-    }
-
-    // MARK: - Voice Transcription
+    // MARK: - Speech
     private func bindSpeechService() {
         speechService.isListeningPublisher
             .receive(on: RunLoop.main)
@@ -242,12 +211,20 @@ final class ChatViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .assign(to: &$voiceErrorMessage)
     }
+    
+    private func updateChatTitle(chatId: UUID, newTitle: String) {
+        guard let index = chatHistories.firstIndex(where: { $0.id == chatId }) else { return }
+
+        chatHistories[index].name = newTitle
+        historyService.updateChatMessages(for: chatId, messages: chatHistories[index].messages)
+        historyService.save()
+    }
 
     func toggleMic() { speechService.toggleListening() }
     func stopMic() { speechService.stopListening() }
     func startMic() { speechService.startListening() }
 
-    // MARK: - Fetch Model
+    // MARK: - Model Fetching
     func fetchAvailableModels() async {
         do {
             let models = try await chatService.fetchAvailableModels()
@@ -257,6 +234,43 @@ final class ChatViewModel: ObservableObject {
             }
         } catch {
             print("Model fetch failed: \(error)")
+        }
+    }
+    
+    func generateTitleForChat(id chatId: UUID) async {
+        guard let chat = chatHistories.first(where: { $0.id == chatId }),
+              chat.name.hasPrefix("New Chat") || chat.name.hasPrefix("Chat on"),
+              !chat.messages.isEmpty else {
+            print("❌ Cannot generate title: chat not found, already named, or empty.")
+            return
+        }
+
+        let recentMessages = Array(chat.messages.prefix(3))
+
+        var summaryMessages: [ChatMessage] = recentMessages
+        summaryMessages.append(
+            ChatMessage(sender: .user, content: "Summarize this conversation in 3-5 words.")
+        )
+
+        do {
+            let stream = try await chatService.sendStream(
+                messages: summaryMessages,
+                model: selectedModel,
+                systemPrompt: "You are summarizing a conversation. Respond with only a short title, nothing else.",
+                attachedImages: []
+            )
+
+            var result = ""
+            for try await token in stream {
+                result += token
+            }
+
+            let newTitle = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newTitle.isEmpty {
+                updateChatTitle(chatId: chatId, newTitle: newTitle)
+            }
+        } catch {
+            print("❌ Title generation failed: \(error.localizedDescription)")
         }
     }
 }

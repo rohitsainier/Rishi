@@ -32,11 +32,18 @@ struct ChatHistorySidebar: View {
                 }
                 .tag(history.id)
                 .contentShape(Rectangle()) // Make entire cell tappable
+                .contextMenu {
+                    Button("Regenerate Title") {
+                        Task {
+                            await viewModel.generateTitleForChat(id: history.id)
+                        }
+                    }
+                }
             }
         }
         .toolbar {
             Button(action: {
-                viewModel.createNewChat()
+                _ = viewModel.createNewChat()
             }) {
                 Label("New Chat", systemImage: "plus")
             }

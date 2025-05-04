@@ -11,6 +11,7 @@ final class AppDI {
     @MainActor
     static func makeChatViewModel() -> ChatViewModel {
         return ChatViewModel(chatService: OllamaService(),
-                             speechService: SpeechRecognizerManager())
+                             speechService: SpeechRecognizerManager(), 
+                             historyService: ChatHistoryService())
     }
 }
