@@ -213,11 +213,11 @@ final class ChatViewModel: ObservableObject {
     }
     
     private func updateChatTitle(chatId: UUID, newTitle: String) {
-        guard let index = chatHistories.firstIndex(where: { $0.id == chatId }) else { return }
+        // Update in service first
+        historyService.updateChatTitle(for: chatId, newTitle: newTitle)
+        // Refresh local state
+        chatHistories = historyService.histories
 
-        chatHistories[index].name = newTitle
-        historyService.updateChatMessages(for: chatId, messages: chatHistories[index].messages)
-        historyService.save()
     }
 
     func toggleMic() { speechService.toggleListening() }

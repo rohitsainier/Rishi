@@ -62,6 +62,12 @@ final class ChatHistoryService: ChatHistoryServiceProtocol {
     func chatMessages(for id: UUID) -> [ChatMessage] {
         histories.first(where: { $0.id == id })?.messages ?? []
     }
+    
+    func updateChatTitle(for id: UUID, newTitle: String) {
+        guard let index = histories.firstIndex(where: { $0.id == id }) else { return }
+        histories[index].name = newTitle
+        save()
+    }
 
     private func chatStorageURL() -> URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!

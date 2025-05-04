@@ -18,4 +18,5 @@ protocol ChatHistoryServiceProtocol {
     func deleteChat(withId id: UUID)
     func updateChatMessages(for id: UUID, messages: [ChatMessage])
     func chatMessages(for id: UUID) -> [ChatMessage]
+    func updateChatTitle(for id: UUID, newTitle: String)
 }
