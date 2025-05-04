@@ -29,6 +29,8 @@
 		917FF6322DC780A200843CBB /* SystemPromptSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */; };
 		917FF6342DC784F700843CBB /* ModelPickerSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6332DC784F700843CBB /* ModelPickerSheetView.swift */; };
 		917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6352DC786E300843CBB /* ChatHeaderBar.swift */; };
+		917FF6382DC7CE1400843CBB /* ChatHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6372DC7CE1400843CBB /* ChatHistory.swift */; };
+		917FF63A2DC7D42A00843CBB /* ChatSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6392DC7D42A00843CBB /* ChatSessionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,8 @@
 		917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemPromptSheetView.swift; sourceTree = "<group>"; };
 		917FF6332DC784F700843CBB /* ModelPickerSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerSheetView.swift; sourceTree = "<group>"; };
 		917FF6352DC786E300843CBB /* ChatHeaderBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHeaderBar.swift; sourceTree = "<group>"; };
+		917FF6372DC7CE1400843CBB /* ChatHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistory.swift; sourceTree = "<group>"; };
+		917FF6392DC7D42A00843CBB /* ChatSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSessionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -162,6 +166,7 @@
 				917FF60A2DC74DD400843CBB /* ChatMessage.swift */,
 				917FF61F2DC7511E00843CBB /* OllamaError.swift */,
 				917FF62F2DC77F9600843CBB /* SystemPrompt.swift */,
+				917FF6372DC7CE1400843CBB /* ChatHistory.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -197,6 +202,7 @@
 				917FF6162DC74E5400843CBB /* ChatView.swift */,
 				917FF6182DC74E6300843CBB /* SidebarView.swift */,
 				917FF61A2DC74E7000843CBB /* MessageInputView.swift */,
+				917FF6392DC7D42A00843CBB /* ChatSessionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -304,6 +310,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				917FF63A2DC7D42A00843CBB /* ChatSessionView.swift in Sources */,
 				917FF6082DC74DAA00843CBB /* Router.swift in Sources */,
 				917FF6062DC74D8F00843CBB /* Dependencies.swift in Sources */,
 				917FF6142DC74E3300843CBB /* ChatViewModel.swift in Sources */,
@@ -318,6 +325,7 @@
 				917FF61E2DC74E9E00843CBB /* MessageBubble.swift in Sources */,
 				917FF6192DC74E6300843CBB /* SidebarView.swift in Sources */,
 				917FF6242DC7694100843CBB /* SpeechServiceProtocol.swift in Sources */,
+				917FF6382DC7CE1400843CBB /* ChatHistory.swift in Sources */,
 				917FF6202DC7511E00843CBB /* OllamaError.swift in Sources */,
 				917FF60E2DC74DEF00843CBB /* ChatServiceProtocol.swift in Sources */,
 				917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */,

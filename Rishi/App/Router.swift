@@ -9,12 +9,21 @@ import SwiftUI
 
 final class AppRouter {
     static let shared = AppRouter()
-    
+
+    private var sharedViewModel: ChatViewModel?
+
     @MainActor
     func rootView() -> some View {
-        NavigationView {
-            SidebarView()
-            ChatView(viewModel: AppDI.makeChatViewModel())
+        if sharedViewModel == nil {
+            sharedViewModel = AppDI.makeChatViewModel()
+        }
+
+        let viewModel = sharedViewModel!
+
+        return NavigationSplitView {
+            ChatHistorySidebar(viewModel: viewModel)
+        } detail: {
+            ChatView(viewModel: viewModel)
         }
     }
 }

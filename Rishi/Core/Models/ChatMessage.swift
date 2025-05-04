@@ -13,11 +13,16 @@ enum ChatMessageSender: String, Codable {
     case assistant
 }
 
-struct ChatMessage: Identifiable {
+struct ChatMessage: Identifiable, Codable {
     let id: UUID
     let sender: ChatMessageSender
     let content: String
-    let images: [NSImage]?
+    var imagesData: [Data]?  // Stores images as Data (Codable-compatible)
+
+    // NSImage is restored after decoding/encoding
+    var images: [NSImage]? {
+        imagesData?.compactMap { NSImage(data: $0) }
+    }
 
     init(id: UUID = UUID(),
          sender: ChatMessageSender,
@@ -26,6 +31,10 @@ struct ChatMessage: Identifiable {
         self.id = id
         self.sender = sender
         self.content = content
-        self.images = images
+        self.imagesData = images?.compactMap { image in
+            guard let tiff = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
+            return bitmap.representation(using: .png, properties: [:])
+        }
     }
 }

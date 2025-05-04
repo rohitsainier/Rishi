@@ -16,7 +16,7 @@ struct MessageBubble: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(message.sender == .assistant ? "🤖" : "You")
+                Text(message.sender == .assistant ? "👽" : "You")
                     .bold()
 
                 Spacer()

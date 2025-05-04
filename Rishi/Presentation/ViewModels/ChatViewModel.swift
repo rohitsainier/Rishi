@@ -10,15 +10,39 @@ import Combine
 
 @MainActor
 final class ChatViewModel: ObservableObject {
-    // MARK: - Chat State
+    // MARK: - Active Chat Session
     @Published var currentInput = ""
-    @Published var messages: [ChatMessage] = []
     @Published var isStreaming = false
     @Published var attachedImages: [NSImage] = []
 
     @Published var selectedModel: String = "gemma3:4b"
     @Published var availableModels: [String] = []
+
+    @Published var chatHistories: [ChatHistory] = []
+    @Published var currentChatId: UUID?
+
+    // Computed: current chat messages
+    var messages: [ChatMessage] {
+        get {
+            guard let index = currentChatIndex else { return [] }
+            return chatHistories[index].messages
+        }
+        set {
+            guard let index = currentChatIndex else { return }
+            chatHistories[index].messages = newValue
+            persistHistories()
+        }
+    }
     
+    var currentChatTitle: String {
+        chatHistories.first(where: { $0.id == currentChatId })?.name ?? "Chat"
+    }
+
+    private var currentChatIndex: Int? {
+        chatHistories.firstIndex(where: { $0.id == currentChatId })
+    }
+    
+
     // MARK: - System Prompt Options
     @Published var groupedSystemPrompts: [String: [SystemPrompt]] = [:]
     @Published var selectedSystemPrompt: SystemPrompt
@@ -30,15 +54,13 @@ final class ChatViewModel: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Services
     private let chatService: ChatServiceProtocol
     private let speechService: SpeechServiceProtocol
 
-    // MARK: - Streaming
+    // Streaming
     private var streamingTask: Task<Void, Never>?
     private var currentStreamingMessageId: UUID?
 
-    // MARK: - Computed: Image Data
     var attachedImagesData: [Data] {
         attachedImages.compactMap {
             guard let tiff = $0.tiffRepresentation,
@@ -46,7 +68,7 @@ final class ChatViewModel: ObservableObject {
             return bitmap.representation(using: .png, properties: [:])
         }
     }
-    
+
     var groupedPromptCategories: [String] {
         groupedSystemPrompts.keys.sorted()
     }
@@ -55,91 +77,120 @@ final class ChatViewModel: ObservableObject {
     init(chatService: ChatServiceProtocol, speechService: SpeechServiceProtocol) {
         self.chatService = chatService
         self.speechService = speechService
+
         let allPrompts: [SystemPrompt] = [
             .init(text: "You are a helpful assistant.", category: "General"),
             .init(text: "Answer concisely and clearly.", category: "General"),
-            
-                .init(text: "Speak like Shakespeare.", category: "Creative"),
+            .init(text: "Speak like Shakespeare.", category: "Creative"),
             .init(text: "Respond in poetic verse.", category: "Creative"),
             .init(text: "Pretend you are a pirate. Arr!", category: "Creative"),
-            
-                .init(text: "Respond as a motivational coach.", category: "Tone"),
+            .init(text: "Respond as a motivational coach.", category: "Tone"),
             .init(text: "Respond like a sarcastic genius.", category: "Tone"),
-            
-                .init(text: "Provide step-by-step instructions.", category: "Instructional"),
+            .init(text: "Provide step-by-step instructions.", category: "Instructional"),
             .init(text: "Act as a professional programmer.", category: "Instructional")
         ]
-        
-        // 🧠 Group them by category
+
         self.groupedSystemPrompts = Dictionary(grouping: allPrompts, by: { $0.category })
-        
-        // 🟢 Default to first General prompt
         self.selectedSystemPrompt = allPrompts.first!
+
+        loadHistories()
+        if chatHistories.isEmpty {
+            createNewChat()
+        }
+
         bindSpeechService()
     }
-
-    // MARK: - Speech State Binding
-    private func bindSpeechService() {
-        speechService
-            .isListeningPublisher
-            .receive(on: RunLoop.main)
-            .assign(to: &$isListening)
-
-        speechService
-            .transcribedTextPublisher
-            .receive(on: RunLoop.main)
-            .assign(to: &$transcribedText)
-
-        speechService
-            .errorMessagePublisher
-            .receive(on: RunLoop.main)
-            .assign(to: &$voiceErrorMessage)
+    
+    func cancelStreamingIfNeeded() {
+        streamingTask?.cancel()
+        isStreaming = false
     }
 
-    // MARK: - Microphone Control
-    func toggleMic() {
-        speechService.toggleListening()
+    // MARK: - Chat History Management
+    func createNewChat() {
+        currentInput = ""
+        attachedImages.removeAll()
+        transcribedText = ""
+        isStreaming = false
+        streamingTask?.cancel()
+
+        let new = ChatHistory(
+            id: UUID(),
+            name: "New Chat \(chatHistories.count + 1)",
+            messages: [],
+            createdAt: Date()
+        )
+        chatHistories.insert(new, at: 0)
+        currentChatId = new.id
+        persistHistories()
     }
 
-    func stopMic() {
-        speechService.stopListening()
+    func deleteChat(id: UUID) {
+        chatHistories.removeAll { $0.id == id }
+        if currentChatId == id {
+            currentChatId = chatHistories.first?.id
+        }
+        persistHistories()
     }
 
-    func startMic() {
-        speechService.startListening()
+    func selectChat(id: UUID) {
+        self.currentChatId = id
     }
 
-    // MARK: - Send Chat Message (Text and/or Image)
+    // Save & Load Chats
+    private func persistHistories() {
+        do {
+            let jsonData = try JSONEncoder().encode(chatHistories)
+            let url = chatStorageURL()
+            try jsonData.write(to: url)
+        } catch {
+            print("Failed to persist chat histories: \(error)")
+        }
+    }
+
+    private func loadHistories() {
+        let url = chatStorageURL()
+        do {
+            let data = try Data(contentsOf: url)
+            let histories = try JSONDecoder().decode([ChatHistory].self, from: data)
+            self.chatHistories = histories
+            self.currentChatId = histories.first?.id
+        } catch {
+            print("⚠️ Failed to load saved chats: \(error)")
+        }
+    }
+
+    private func chatStorageURL() -> URL {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("ChatHistories.json")
+    }
+
+    // MARK: - Message Streaming Logic
     func streamMessage(model: String, systemPrompt: String?, attachedImages: [Data] = []) {
         let trimmedInput = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        
         guard !trimmedInput.isEmpty || !self.attachedImages.isEmpty else { return }
 
-        // ✅ Store message with both text and image (displayed in UI)
         let userMessage = ChatMessage(
-            sender: ChatMessageSender.user,
+            sender: .user,
             content: trimmedInput,
-            images: self.attachedImages.isEmpty ? nil : self.attachedImages
-        )
-        messages.append(userMessage)
+            images: self.attachedImages.isEmpty ? nil : self.attachedImages)
 
-        // ✅ Clear inputs
+        messages.append(userMessage)
         currentInput = ""
         self.attachedImages.removeAll()
         isStreaming = true
 
-        // Assistant placeholder
-        let assistantMessage = ChatMessage(sender: ChatMessageSender.assistant, content: "")
+        let assistantMessage = ChatMessage(sender: .assistant, content: "")
         currentStreamingMessageId = assistantMessage.id
         messages.append(assistantMessage)
 
-        // Cancel old stream
         streamingTask?.cancel()
 
-        // Start new stream task
         streamingTask = Task {
             do {
-                var streamedContent = ""
+                var streamed = ""
+
                 let stream = try await chatService.sendStream(
                     messages: messages,
                     model: model,
@@ -148,8 +199,8 @@ final class ChatViewModel: ObservableObject {
                 )
 
                 for try await token in stream {
-                    streamedContent += token
-                    updateAssistantMessage(content: streamedContent)
+                    streamed += token
+                    updateAssistantMessage(content: streamed)
                 }
             } catch {
                 updateAssistantMessage(content: "⚠️ \(error.localizedDescription)")
@@ -159,26 +210,44 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Stop Streaming
-    func stopMessageStreaming() {
-        chatService.stopStreaming()
-        streamingTask?.cancel()
-        isStreaming = false
-    }
-
-    // MARK: - Update Last Assistant Message
     private func updateAssistantMessage(content: String) {
         guard let id = currentStreamingMessageId,
               let index = messages.firstIndex(where: { $0.id == id }) else { return }
 
         messages[index] = ChatMessage(
             id: id,
-            sender: ChatMessageSender.assistant,
+            sender: .assistant,
             content: content
         )
+        persistHistories()
     }
 
-    // MARK: - Fetch Models from Ollama
+    func stopMessageStreaming() {
+        chatService.stopStreaming()
+        streamingTask?.cancel()
+        isStreaming = false
+    }
+
+    // MARK: - Voice Transcription
+    private func bindSpeechService() {
+        speechService.isListeningPublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$isListening)
+
+        speechService.transcribedTextPublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$transcribedText)
+
+        speechService.errorMessagePublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$voiceErrorMessage)
+    }
+
+    func toggleMic() { speechService.toggleListening() }
+    func stopMic() { speechService.stopListening() }
+    func startMic() { speechService.startListening() }
+
+    // MARK: - Fetch Model
     func fetchAvailableModels() async {
         do {
             let models = try await chatService.fetchAvailableModels()
