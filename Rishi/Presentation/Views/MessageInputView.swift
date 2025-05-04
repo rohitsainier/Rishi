@@ -39,6 +39,7 @@ struct MessageInputView: View {
                         .frame(width: 6, height: 6)
                         .padding(.horizontal, 6)
                 }
+                
                 // 🖼 Image picker with count badge
                 ZStack(alignment: .topTrailing) {
                     Button {

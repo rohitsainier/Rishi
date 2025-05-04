@@ -10,24 +10,34 @@ import UniformTypeIdentifiers
 
 struct ChatSessionView: View {
     @ObservedObject var viewModel: ChatViewModel
-
+    @State private var showPromptPicker = false
+    @State private var showModelPicker = false
     var body: some View {
         VStack {
             // Header
             ChatHeaderBar(
-                showModelPicker: .constant(false),
-                showChatTypePicker: .constant(false),
+                showModelPicker: $showModelPicker,
+                showChatTypePicker: $showPromptPicker,
                 selectedModel: viewModel.selectedModel,
                 selectedChatType: viewModel.selectedSystemPrompt.text
             )
-
+            // ✅ Sheet for System Prompt
+            .sheet(isPresented: $showPromptPicker) {
+                SystemPromptSheetView(viewModel: viewModel, isPresented: $showPromptPicker)
+            }
+            
+            // ✅ Sheet for Model Picker
+            .sheet(isPresented: $showModelPicker) {
+                ModelPickerSheetView(viewModel: viewModel, isPresented: $showModelPicker)
+            }
+            
             ScrollViewReader { proxy in
                 ScrollView {
                     ForEach(viewModel.messages) { message in
                         MessageBubble(message: message)
                             .id(message.id)
                     }
-
+                    
                     if viewModel.messages.isEmpty {
                         Text("Start typing to begin your conversation.")
                             .foregroundColor(.gray)
@@ -44,9 +54,9 @@ struct ChatSessionView: View {
                     }
                 }
             }
-
+            
             Divider()
-
+            
             // Attached Images
             if !viewModel.attachedImages.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -70,7 +80,7 @@ struct ChatSessionView: View {
                     }
                 }.padding(.horizontal)
             }
-
+            
             // Input Area
             MessageInputView(
                 input: viewModel.isListening ? $viewModel.transcribedText : $viewModel.currentInput,
@@ -90,6 +100,11 @@ struct ChatSessionView: View {
                 onImportImages: { images in viewModel.attachedImages.append(contentsOf: images) }
             )
             .padding()
+            .background {
+                KeyboardMonitor {
+                    viewModel.toggleMic()
+                }
+            }
         }
         .navigationTitle(viewModel.currentChatTitle)
     }
