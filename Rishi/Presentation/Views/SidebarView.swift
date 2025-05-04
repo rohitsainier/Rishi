@@ -19,14 +19,12 @@ struct ChatHistorySidebar: View {
                             .font(.headline)
                         Text(history.createdAt, style: .date)
                             .font(.caption)
-                            .foregroundStyle(.gray)
                     }
                     Spacer()
                     Button {
                         viewModel.deleteChat(id: history.id)
                     } label: {
                         Image(systemName: "trash")
-                            .foregroundColor(.red)
                     }
                     .buttonStyle(BorderlessButtonStyle())
                 }
