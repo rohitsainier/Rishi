@@ -10,8 +10,11 @@ import MarkdownUI
 
 struct MessageBubble: View {
     let message: ChatMessage
+
     @State private var showCopied = false
-    @State private var selectedImage: NSImage? = nil
+    @State private var extractedSVG: String?
+    @State private var svgHeight: CGFloat = 10
+    @State private var svgWidth: CGFloat = 10
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -38,18 +41,26 @@ struct MessageBubble: View {
                     .buttonStyle(.borderless)
                 }
             }
-
-            // 🧠 Message content
-            if !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Markdown(message.content)
-                    .fontWeight(.bold)
-                    .markdownTheme(.docC)
-                    .padding(8)
-                    .background(message.sender == .user ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.1))
+            // 🧠 SVG WebView rendering (WKWebView-based)
+            if let svg = extractedSVG {
+                ResizableSVGWebView(svg: svg, 
+                                    height: $svgHeight,
+                                    width: $svgWidth)
+                    .frame(width: svgWidth, height: svgHeight)
                     .cornerRadius(8)
+                    .disabled(true)
+            } else {
+                if !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Markdown(message.content)
+                        .fontWeight(.bold)
+                        .markdownTheme(.docC)
+                        .padding(8)
+                        .background(message.sender == .user ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.1))
+                        .cornerRadius(8)
+                }
             }
 
-            // 🖼 Attached Images
+            // 🖼 Attached Images (non-svg)
             if let images = message.images, !images.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
@@ -72,11 +83,17 @@ struct MessageBubble: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
         .padding(.bottom, 4)
+        .onAppear {
+            extractedSVG = extractSVGFromMarkdown(message.content)
+        }
+        .onChange(of: message.content) {
+            extractedSVG = extractSVGFromMarkdown(message.content)
+        }
     }
 
     private func extractCleanMessage(from markdown: String) -> String {
         let pattern = #"```(?:\w+)?\n([\s\S]*?)```"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+        if let regex = try? NSRegularExpression(pattern: pattern),
            let match = regex.firstMatch(in: markdown, options: [], range: NSRange(markdown.startIndex..., in: markdown)),
            let range = Range(match.range(at: 1), in: markdown) {
             return String(markdown[range]).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -89,5 +106,16 @@ struct MessageBubble: View {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
     }
-}
 
+    private func extractSVGFromMarkdown(_ markdown: String) -> String? {
+        let pattern = #"<svg[\s\S]*?</svg>"#
+        if let range = markdown.range(of: pattern, options: .regularExpression) {
+            var svg = String(markdown[range])
+            if !svg.contains("xmlns=") {
+                svg = svg.replacingOccurrences(of: "<svg", with: "<svg xmlns=\"http://www.w3.org/2000/svg\"")
+            }
+            return svg
+        }
+        return nil
+    }
+}

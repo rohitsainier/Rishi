@@ -92,7 +92,8 @@ final class ChatViewModel: ObservableObject {
             .init(text: "Respond as a motivational coach.", category: "Tone"),
             .init(text: "Respond like a sarcastic genius.", category: "Tone"),
             .init(text: "Provide step-by-step instructions.", category: "Instructional"),
-            .init(text: "Act as a professional programmer.", category: "Instructional")
+            .init(text: "Act as a professional programmer.", category: "Instructional"),
+            .init(text: "I would like you to act as an SVG designer. I will ask you to create images, and you will come up with SVG code for the image, nothing else no explanation nothing just code. My first request is: give me an image of a red circle.", category: "SVG")
         ]
 
         self.groupedSystemPrompts = Dictionary(grouping: prompts, by: { $0.category })
