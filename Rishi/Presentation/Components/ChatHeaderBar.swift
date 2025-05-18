@@ -26,7 +26,7 @@ struct ChatHeaderBar: View {
                 .foregroundColor(.primary.opacity(0.8))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.1))
+                .background(Color(NSColor.controlBackgroundColor))
                 .clipShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -46,7 +46,7 @@ struct ChatHeaderBar: View {
                 .foregroundColor(.primary.opacity(0.8))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.1))
+                .background(Color(NSColor.controlBackgroundColor))
                 .clipShape(Capsule())
             }
             .buttonStyle(.plain)

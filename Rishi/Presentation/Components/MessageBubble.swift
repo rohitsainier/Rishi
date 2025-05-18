@@ -45,7 +45,7 @@ struct MessageBubble: View {
                     .fontWeight(.bold)
                     .markdownTheme(.docC)
                     .padding(8)
-                    .background(message.sender == .user ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                    .background(message.sender == .user ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.1))
                     .cornerRadius(8)
             }
 

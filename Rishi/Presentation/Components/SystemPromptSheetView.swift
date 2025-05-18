@@ -52,7 +52,7 @@ struct SystemPromptSheetView: View {
                                     .padding()
                                     .background(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.gray.opacity(0.1))
+                                            .fill(Color(NSColor.controlBackgroundColor))
                                     )
                                 }
                                 .buttonStyle(.plain)

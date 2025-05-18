@@ -55,7 +55,7 @@ struct MessageInputView: View {
                             .font(.caption2)
                             .foregroundColor(.white)
                             .frame(width: 16, height: 16)
-                            .background(Circle().fill(Color.red))
+                            .background(Circle().fill(Color(NSColor.systemRed)))
                             .offset(x: 8, y: -8)
                     }
                 }
@@ -91,7 +91,7 @@ struct MessageInputView: View {
                   ? "🎙 Listening… speak now"
                   : "⌨ Click the mic or press space bar to speak.")
                 .font(.caption)
-                .foregroundColor(isListening ? .red : .secondary)
+                .foregroundColor(Color.accentColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             // ⚠️ Show any error

@@ -47,9 +47,7 @@ struct ModelPickerSheetView: View {
                             .padding()
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(model == viewModel.selectedModel
-                                          ? Color.accentColor.opacity(0.1)
-                                          : Color.gray.opacity(0.05))
+                                    .fill(Color(NSColor.controlBackgroundColor))
                             )
                         }
                         .buttonStyle(.plain)
