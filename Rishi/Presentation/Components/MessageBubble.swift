@@ -13,8 +13,10 @@ struct MessageBubble: View {
 
     @State private var showCopied = false
     @State private var extractedSVG: String?
+    @State private var extractedHTML: String?
     @State private var svgHeight: CGFloat = 10
     @State private var svgWidth: CGFloat = 10
+    @State private var htmlHeight: CGFloat = 400
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -42,8 +44,14 @@ struct MessageBubble: View {
                 }
             }
             // 🧠 SVG WebView rendering (WKWebView-based)
-            if let svg = extractedSVG {
-                ResizableSVGWebView(svg: svg, 
+            if let html = extractedHTML {
+                RichWebView(html: html, height: $htmlHeight)
+                    .frame(height: htmlHeight)
+                    .cornerRadius(8)
+                    .disabled(true)
+            }
+            else if let svg = extractedSVG {
+                ResizableSVGWebView(svg: svg,
                                     height: $svgHeight,
                                     width: $svgWidth)
                     .frame(width: svgWidth, height: svgHeight)
@@ -85,9 +93,11 @@ struct MessageBubble: View {
         .padding(.bottom, 4)
         .onAppear {
             extractedSVG = extractSVGFromMarkdown(message.content)
+            extractedHTML = extractHTMLFromMarkdown(message.content)
         }
         .onChange(of: message.content) {
             extractedSVG = extractSVGFromMarkdown(message.content)
+            extractedHTML = extractHTMLFromMarkdown(message.content)
         }
     }
 
@@ -116,6 +126,18 @@ struct MessageBubble: View {
             }
             return svg
         }
+        return nil
+    }
+    
+    private func extractHTMLFromMarkdown(_ markdown: String) -> String? {
+        let pattern = #"```html\n([\s\S]*?)```"#
+        if let regex = try? NSRegularExpression(pattern: pattern),
+           let match = regex.firstMatch(in: markdown, options: [], range: NSRange(markdown.startIndex..., in: markdown)),
+           let range = Range(match.range(at: 1), in: markdown) {
+            return String(markdown[range])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
         return nil
     }
 }
