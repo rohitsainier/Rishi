@@ -10,7 +10,7 @@ import MarkdownUI
 
 struct MessageBubble: View {
     let message: ChatMessage
-
+    
     @State private var showCopied = false
     @State private var extractedSVG: String?
     @State private var extractedHTML: String?
@@ -19,7 +19,7 @@ struct MessageBubble: View {
     @State private var htmlHeight: CGFloat = 400
     @State private var showRawHTML = false
     @State private var showRawSVG = false
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // 👽 Sender + Copy
@@ -28,9 +28,9 @@ struct MessageBubble: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .bold()
-
+                
                 Spacer()
-
+                
                 Button {
                     let cleanText = extractCleanMessage(from: message.content)
                     copyToClipboard(cleanText)
@@ -49,7 +49,7 @@ struct MessageBubble: View {
                 .buttonStyle(.plain)
                 .help("Copy response to clipboard")
             }
-
+            
             // 🌐 HTML
             if let html = extractedHTML {
                 VStack(alignment: .leading, spacing: 8) {
@@ -57,57 +57,67 @@ struct MessageBubble: View {
                         .toggleStyle(.checkbox)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-
+                    
                     Group {
                         if !showRawHTML {
                             ScrollView {
                                 Text(html)
                                     .font(.system(.body, design: .monospaced))
                                     .padding()
-                                    .background(Color(NSColor.controlBackgroundColor))
+                                    .background(Color.secondary.opacity(0.1))
                                     .cornerRadius(12)
                             }
                             .frame(maxHeight: 300)
                         } else {
                             RichWebView(html: html, height: $htmlHeight)
                                 .frame(height: min(400, max(100, htmlHeight)))
-                                .background(Color(NSColor.controlBackgroundColor))
+                                .background(Color.secondary.opacity(0.1))
                                 .cornerRadius(12)
-                                .shadow(radius: 2)
                         }
                     }
                 }
             }
-
+            
             // 🖼 SVG
             else if let svg = extractedSVG {
                 VStack(alignment: .leading, spacing: 8) {
-                    Toggle("Preview SVG", isOn: $showRawSVG)
-                        .toggleStyle(.checkbox)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
+                    HStack {
+                        Toggle("Preview SVG", isOn: $showRawSVG)
+                            .toggleStyle(.checkbox)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if showRawSVG {
+                            Button {
+                                downloadSVG(svg: svg)
+                            } label: {
+                                Label("Download", systemImage: "arrow.down.circle")
+                                    .labelStyle(.iconOnly)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Download SVG as .svg file")
+                        }
+                    }
+                    
                     Group {
                         if !showRawSVG {
                             ScrollView {
                                 Text(svg)
                                     .font(.system(.body, design: .monospaced))
                                     .padding()
-                                    .background(Color(NSColor.controlBackgroundColor))
+                                    .background(Color.secondary.opacity(0.1))
                                     .cornerRadius(12)
                             }
                             .frame(maxHeight: 300)
                         } else {
                             ResizableSVGWebView(svg: svg, height: $svgHeight, width: $svgWidth)
                                 .frame(width: svgWidth, height: svgHeight)
-                                .background(Color(NSColor.controlBackgroundColor))
+                                .background(Color.secondary.opacity(0.1))
                                 .cornerRadius(12)
-                                .shadow(radius: 2)
                         }
                     }
                 }
             }
-
+            
             // ✍️ Markdown Fallback
             else if !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Markdown(message.content)
@@ -117,7 +127,7 @@ struct MessageBubble: View {
                     .background(Color.secondary.opacity(0.1))
                     .cornerRadius(12)
             }
-
+            
             // 🖼 Attached Images
             if let images = message.images, !images.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -141,7 +151,6 @@ struct MessageBubble: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
             extractedSVG = extractSVGFromMarkdown(message.content)

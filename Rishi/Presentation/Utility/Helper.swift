@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVKit
 
  func extractCleanMessage(from markdown: String) -> String {
     let pattern = #"```(?:\w+)?\n([\s\S]*?)```"#
@@ -45,4 +46,28 @@ import SwiftUI
     }
 
     return nil
+}
+
+ func downloadSVG(svg: String) {
+    let savePanel = NSSavePanel()
+    savePanel.allowedContentTypes = [.svg]
+    savePanel.nameFieldStringValue = "icon.svg"
+
+    savePanel.begin { result in
+        if result == .OK, let url = savePanel.url {
+            do {
+                try svg.write(to: url, atomically: true, encoding: .utf8)
+                print("✅ SVG saved to \(url.path)")
+                // Optional: Show alert or badge feedback
+            } catch {
+                print("❌ Failed to save SVG: \(error)")
+            }
+        }
+    }
+}
+
+extension UTType {
+    static var svg: UTType {
+        UTType(filenameExtension: "svg") ?? .text
+    }
 }
