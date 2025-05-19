@@ -24,8 +24,8 @@ struct MessageBubble: View {
         VStack(alignment: .leading, spacing: 10) {
             // 👽 Sender + Copy
             HStack {
-                Text(message.sender == .assistant ? "👽 Assistant" : "🧑 You")
-                    .font(.subheadline)
+                Text(message.sender == .assistant ? "🔱 Rishi" : "🧑 You")
+                    .font(.headline)
                     .foregroundStyle(.secondary)
                     .bold()
                 
