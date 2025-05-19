@@ -33,6 +33,9 @@
 		917FF63A2DC7D42A00843CBB /* ChatSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6392DC7D42A00843CBB /* ChatSessionView.swift */; };
 		917FF63E2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF63D2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift */; };
 		917FF6412DC7D7F000843CBB /* ChatHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6402DC7D7F000843CBB /* ChatHistoryService.swift */; };
+		91ADD1D12DDAE4D500AD1F04 /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D02DDAE4D500AD1F04 /* Helper.swift */; };
+		91ADD1D42DDAE54500AD1F04 /* RichWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D22DDAE54500AD1F04 /* RichWebView.swift */; };
+		91ADD1D52DDAE54500AD1F04 /* SVGWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D32DDAE54500AD1F04 /* SVGWebView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +67,9 @@
 		917FF6392DC7D42A00843CBB /* ChatSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSessionView.swift; sourceTree = "<group>"; };
 		917FF63D2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryServiceProtocol.swift; sourceTree = "<group>"; };
 		917FF6402DC7D7F000843CBB /* ChatHistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryService.swift; sourceTree = "<group>"; };
+		91ADD1D02DDAE4D500AD1F04 /* Helper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
+		91ADD1D22DDAE54500AD1F04 /* RichWebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RichWebView.swift; sourceTree = "<group>"; };
+		91ADD1D32DDAE54500AD1F04 /* SVGWebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SVGWebView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -235,7 +241,10 @@
 		917FF62C2DC77E2900843CBB /* Utility */ = {
 			isa = PBXGroup;
 			children = (
+				91ADD1D22DDAE54500AD1F04 /* RichWebView.swift */,
+				91ADD1D32DDAE54500AD1F04 /* SVGWebView.swift */,
 				917FF62D2DC77E3800843CBB /* Keyboard.swift */,
+				91ADD1D02DDAE4D500AD1F04 /* Helper.swift */,
 			);
 			path = Utility;
 			sourceTree = "<group>";
@@ -336,6 +345,8 @@
 				917FF5F22DC74B7F00843CBB /* RishiApp.swift in Sources */,
 				917FF62E2DC77E3800843CBB /* Keyboard.swift in Sources */,
 				917FF63E2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift in Sources */,
+				91ADD1D52DDAE54500AD1F04 /* SVGWebView.swift in Sources */,
+				91ADD1D42DDAE54500AD1F04 /* RichWebView.swift in Sources */,
 				917FF6322DC780A200843CBB /* SystemPromptSheetView.swift in Sources */,
 				917FF6342DC784F700843CBB /* ModelPickerSheetView.swift in Sources */,
 				917FF61E2DC74E9E00843CBB /* MessageBubble.swift in Sources */,
@@ -347,6 +358,7 @@
 				917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */,
 				917FF61B2DC74E7000843CBB /* MessageInputView.swift in Sources */,
 				917FF6112DC74E1500843CBB /* OllamaService.swift in Sources */,
+				91ADD1D12DDAE4D500AD1F04 /* Helper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
