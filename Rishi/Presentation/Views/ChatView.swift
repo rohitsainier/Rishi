@@ -15,12 +15,12 @@ struct ChatView: View {
     
     var body: some View {
         VStack {
-            if let _ = viewModel.currentChatId {
+            switch viewModel.activeScreen {
+            case .chat:
                 ChatSessionView(viewModel: viewModel)
-            } else {
-                Text("No chat selected.")
-                    .foregroundColor(.gray)
-                    .font(.title)
+
+            case .battle:
+                BattleView(viewModel: viewModel)
             }
         }
         .onAppear {
