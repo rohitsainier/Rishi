@@ -21,7 +21,7 @@ final class AppRouter {
         let viewModel = sharedViewModel!
 
         return NavigationSplitView {
-            ChatHistorySidebar(viewModel: viewModel)
+            SidebarView(viewModel: viewModel)
         } detail: {
             ChatView(viewModel: viewModel)
         }

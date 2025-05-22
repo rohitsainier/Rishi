@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ChatHistorySidebar: View {
+struct SidebarView: View {
     @ObservedObject var viewModel: ChatViewModel
 
     var body: some View {
