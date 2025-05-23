@@ -17,6 +17,12 @@ final class AppDI {
     
     @MainActor 
     static func makeBattleViewModel() -> BattleViewModel {
-        return BattleViewModel(chatService: OllamaService())
+        return BattleViewModel(chatService: OllamaService(),
+                               leaderboardViewModel: makeLeaderBoardViewModel())
+    }
+    
+    @MainActor
+    static func makeLeaderBoardViewModel() -> LeaderboardViewModel {
+        return LeaderboardViewModel()
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @ObservedObject var viewModel: ChatViewModel
-
+    
     var body: some View {
         List(selection: Binding<Set<String>>(
             get: {
@@ -17,6 +17,8 @@ struct SidebarView: View {
                     return [chatId.uuidString]
                 } else if viewModel.activeScreen == .battle {
                     return ["battle"]
+                } else if viewModel.activeScreen == .leaderboard {
+                    return ["leaderboard"]
                 }
                 return []
             },
@@ -25,6 +27,8 @@ struct SidebarView: View {
                 
                 if selectedId == "battle" {
                     viewModel.activeScreen = .battle
+                } else if selectedId == "leaderboard" {
+                    viewModel.activeScreen = .leaderboard
                 } else if let uuid = UUID(uuidString: selectedId) {
                     viewModel.selectChat(id: uuid)
                     viewModel.activeScreen = .chat
@@ -61,6 +65,7 @@ struct SidebarView: View {
             }
             
             Section(header: Text("Features")) {
+                // AI Battle
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("AI Battle")
@@ -77,7 +82,26 @@ struct SidebarView: View {
                     .buttonStyle(BorderlessButtonStyle())
                 }
                 .tag("battle")
-                .contentShape(Rectangle()) // Make the whole row clickable
+                .contentShape(Rectangle())
+                
+                // Leaderboard
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Leaderboard")
+                            .font(.headline)
+                        Text("Model rankings")
+                            .font(.caption)
+                    }
+                    Spacer()
+                    Button {
+                        viewModel.activeScreen = .leaderboard
+                    } label: {
+                        Image(systemName: "trophy.fill")
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                }
+                .tag("leaderboard")
+                .contentShape(Rectangle())
             }
         }
         .toolbar {

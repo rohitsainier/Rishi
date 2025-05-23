@@ -29,11 +29,15 @@ final class BattleViewModel: ObservableObject {
     // MARK: - Model-specific Messages
     @Published var leftMessages: [ChatMessage] = []
     @Published var rightMessages: [ChatMessage] = []
+    @Published var leaderboardViewModel: LeaderboardViewModel
 
     // MARK: - Initializer
-    init(chatService: ChatServiceProtocol, availableModels: [String] = []) {
+    init(chatService: ChatServiceProtocol,
+         availableModels: [String] = [],
+         leaderboardViewModel: LeaderboardViewModel) {
         self.chatService = chatService
         self.availableModels = availableModels
+        self.leaderboardViewModel = leaderboardViewModel
     }
 
     // MARK: - Battle Logic
@@ -107,8 +111,15 @@ final class BattleViewModel: ObservableObject {
     }
 
     // MARK: - Clear & Voting
-
     func vote(winnerModel: String) {
+        let loserModel = winnerModel == selectedLeftModel ? selectedRightModel : selectedLeftModel
+        let result = BattleResult(
+            winnerModel: winnerModel,
+            loserModel: loserModel,
+            prompt: leftMessages.first(where: { $0.sender == .user })?.content ?? ""
+        )
+        
+        leaderboardViewModel.addBattleResult(result)
         print("✅ Voted for: \(winnerModel)")
         promptInput = ""
         clearChat()

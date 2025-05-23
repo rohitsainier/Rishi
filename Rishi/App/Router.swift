@@ -12,6 +12,7 @@ final class AppRouter {
 
     private var chatViewModel: ChatViewModel?
     private var battleViewModel: BattleViewModel?
+    private var leaderboardViewModel: LeaderboardViewModel?
     
     @MainActor
     func rootView() -> some View {
@@ -21,13 +22,19 @@ final class AppRouter {
         if battleViewModel == nil {
             battleViewModel = AppDI.makeBattleViewModel()
         }
+        if leaderboardViewModel == nil {
+            leaderboardViewModel = AppDI.makeLeaderBoardViewModel()
+        }
         let chatViewModel = chatViewModel!
         let bettleViewModel = battleViewModel!
-
+        let leaderboardViewModel = leaderboardViewModel!
+        
         return NavigationSplitView {
             SidebarView(viewModel: chatViewModel)
         } detail: {
-            ChatView(chatViewModel: chatViewModel, battleViewModel: bettleViewModel)
+            ChatView(chatViewModel: chatViewModel,
+                     battleViewModel: bettleViewModel,
+                     leaderboardViewModel: leaderboardViewModel)
         }
     }
 }

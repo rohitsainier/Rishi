@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 struct ChatView: View {
     @ObservedObject var chatViewModel: ChatViewModel
     @ObservedObject var battleViewModel: BattleViewModel
+    @ObservedObject var leaderboardViewModel: LeaderboardViewModel
     @State private var isTargeted: Bool = false
     @State private var activeChatId: UUID?
     
@@ -22,6 +23,9 @@ struct ChatView: View {
 
             case .battle:
                 BattleView(viewModel: battleViewModel)
+                
+            case .leaderboard:
+                LeaderboardView(viewModel: leaderboardViewModel)
             }
         }
         .onAppear {
