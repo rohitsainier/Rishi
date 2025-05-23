@@ -14,4 +14,15 @@ final class AppDI {
                              speechService: SpeechRecognizerManager(), 
                              historyService: ChatHistoryService())
     }
+    
+    @MainActor 
+    static func makeBattleViewModel() -> BattleViewModel {
+        return BattleViewModel(chatService: OllamaService(),
+                               leaderboardViewModel: makeLeaderBoardViewModel())
+    }
+    
+    @MainActor
+    static func makeLeaderBoardViewModel() -> LeaderboardViewModel {
+        return LeaderboardViewModel()
+    }
 }

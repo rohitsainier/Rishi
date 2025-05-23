@@ -11,6 +11,7 @@ import Combine
 @MainActor
 final class ChatViewModel: ObservableObject {
     // MARK: - Published UI State
+    @Published var activeScreen: ScreenType = .chat
     @Published var currentInput = ""
     @Published var isStreaming = false
     @Published var attachedImages: [NSImage] = []
@@ -64,7 +65,7 @@ final class ChatViewModel: ObservableObject {
     @Published var voiceErrorMessage: String? = nil
 
     // MARK: - Services
-    private let chatService: ChatServiceProtocol
+    let chatService: ChatServiceProtocol
     private let speechService: SpeechServiceProtocol
     private let historyService: ChatHistoryServiceProtocol
 

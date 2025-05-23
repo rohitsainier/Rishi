@@ -52,12 +52,30 @@ final class OllamaService: NSObject, URLSessionDataDelegate {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
 
         return AsyncThrowingStream { continuation in
-            self.continuation = continuation
-            self.currentTask = session.dataTask(with: request)
-            self.currentTask?.resume()
+            Task {
+                do {
+                    for try await line in bytes.lines {
+                        guard let data = line.data(using: .utf8),
+                              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                            continue
+                        }
+
+                        let token = (json["message"] as? [String: Any])?["content"] as? String
+                            ?? json["response"] as? String
+
+                        if let token = token {
+                            continuation.yield(token)
+                        }
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
         }
     }
 
