@@ -9,50 +9,51 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ChatView: View {
-    @ObservedObject var viewModel: ChatViewModel
+    @ObservedObject var chatViewModel: ChatViewModel
+    @ObservedObject var battleViewModel: BattleViewModel
     @State private var isTargeted: Bool = false
     @State private var activeChatId: UUID?
     
     var body: some View {
         VStack {
-            switch viewModel.activeScreen {
+            switch chatViewModel.activeScreen {
             case .chat:
-                ChatSessionView(viewModel: viewModel)
+                ChatSessionView(viewModel: chatViewModel)
 
             case .battle:
-                BattleView(viewModel: viewModel)
+                BattleView(viewModel: battleViewModel)
             }
         }
         .onAppear {
-            activeChatId = viewModel.currentChatId
+            activeChatId = chatViewModel.currentChatId
         }
         .task {
-            await viewModel.fetchAvailableModels()
+            await chatViewModel.fetchAvailableModels()
         }
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             handleDroppedItems(providers)
         }
-        .onChange(of: viewModel.isListening) { _, isActive in
+        .onChange(of: chatViewModel.isListening) { _, isActive in
             if isActive == false {
-                let trimmed = viewModel.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmed = chatViewModel.transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
-                    viewModel.currentInput = trimmed
-                    viewModel.transcribedText = ""
-                    viewModel.streamMessage(
-                        model: viewModel.selectedModel,
-                        systemPrompt: viewModel.selectedSystemPrompt.text,
-                        attachedImages: viewModel.attachedImagesData
+                    chatViewModel.currentInput = trimmed
+                    chatViewModel.transcribedText = ""
+                    chatViewModel.streamMessage(
+                        model: chatViewModel.selectedModel,
+                        systemPrompt: chatViewModel.selectedSystemPrompt.text,
+                        attachedImages: chatViewModel.attachedImagesData
                     )
                 }
             }
         }
-        .onChange(of: viewModel.currentChatId) { _, newId in
+        .onChange(of: chatViewModel.currentChatId) { _, newId in
             // Reset transient states
             activeChatId = newId
-            viewModel.currentInput = ""
-            viewModel.transcribedText = ""
-            viewModel.attachedImages.removeAll()
-            viewModel.cancelStreamingIfNeeded()
+            chatViewModel.currentInput = ""
+            chatViewModel.transcribedText = ""
+            chatViewModel.attachedImages.removeAll()
+            chatViewModel.cancelStreamingIfNeeded()
         }
     }
     
@@ -67,7 +68,7 @@ struct ChatView: View {
                 }
                 
                 DispatchQueue.main.async {
-                    viewModel.attachedImages.append(image)
+                    chatViewModel.attachedImages.append(image)
                 }
             }
         }

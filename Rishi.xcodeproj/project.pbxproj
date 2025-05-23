@@ -35,6 +35,7 @@
 		917FF6412DC7D7F000843CBB /* ChatHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF6402DC7D7F000843CBB /* ChatHistoryService.swift */; };
 		91A2E5AB2DDFAB3A00F1C9BB /* ScreenType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A2E5AA2DDFAB3A00F1C9BB /* ScreenType.swift */; };
 		91A2E5AD2DDFAC4000F1C9BB /* BattleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A2E5AC2DDFAC4000F1C9BB /* BattleView.swift */; };
+		91A2E5AF2DE0234100F1C9BB /* BattleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A2E5AE2DE0234100F1C9BB /* BattleViewModel.swift */; };
 		91ADD1D12DDAE4D500AD1F04 /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D02DDAE4D500AD1F04 /* Helper.swift */; };
 		91ADD1D42DDAE54500AD1F04 /* RichWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D22DDAE54500AD1F04 /* RichWebView.swift */; };
 		91ADD1D52DDAE54500AD1F04 /* SVGWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD1D32DDAE54500AD1F04 /* SVGWebView.swift */; };
@@ -71,6 +72,7 @@
 		917FF6402DC7D7F000843CBB /* ChatHistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryService.swift; sourceTree = "<group>"; };
 		91A2E5AA2DDFAB3A00F1C9BB /* ScreenType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenType.swift; sourceTree = "<group>"; };
 		91A2E5AC2DDFAC4000F1C9BB /* BattleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleView.swift; sourceTree = "<group>"; };
+		91A2E5AE2DE0234100F1C9BB /* BattleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleViewModel.swift; sourceTree = "<group>"; };
 		91ADD1D02DDAE4D500AD1F04 /* Helper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
 		91ADD1D22DDAE54500AD1F04 /* RichWebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RichWebView.swift; sourceTree = "<group>"; };
 		91ADD1D32DDAE54500AD1F04 /* SVGWebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SVGWebView.swift; sourceTree = "<group>"; };
@@ -209,6 +211,7 @@
 			isa = PBXGroup;
 			children = (
 				917FF6132DC74E3300843CBB /* ChatViewModel.swift */,
+				91A2E5AE2DE0234100F1C9BB /* BattleViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -363,6 +366,7 @@
 				917FF6382DC7CE1400843CBB /* ChatHistory.swift in Sources */,
 				917FF6202DC7511E00843CBB /* OllamaError.swift in Sources */,
 				917FF60E2DC74DEF00843CBB /* ChatServiceProtocol.swift in Sources */,
+				91A2E5AF2DE0234100F1C9BB /* BattleViewModel.swift in Sources */,
 				917FF6362DC786E300843CBB /* ChatHeaderBar.swift in Sources */,
 				917FF61B2DC74E7000843CBB /* MessageInputView.swift in Sources */,
 				917FF6112DC74E1500843CBB /* OllamaService.swift in Sources */,

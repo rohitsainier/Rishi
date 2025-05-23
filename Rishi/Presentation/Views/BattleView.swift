@@ -4,264 +4,266 @@
 //
 //  Created by Rohit Saini on 23/05/25.
 //
-
 import SwiftUI
-
-// Extension to make TextEditor display a placeholder
-extension TextEditor {
-    func placeholder<Content: View>(_ view: Content, when shouldShow: Bool) -> some View {
-        ZStack(alignment: .topLeading) {
-            view.opacity(shouldShow ? 1 : 0)
-            if shouldShow {
-                self
-            }
-        }
-    }
-}
+import Combine
 
 struct BattleView: View {
-    @ObservedObject var viewModel: ChatViewModel
-    @State private var promptInput = ""
-    @State private var leftResponse = ""
-    @State private var rightResponse = ""
-    @State private var isStreaming = false
-    @State private var selectedLeftModel: String = "gemma3:4b"
-    @State private var selectedRightModel: String = "gemma3:12b"
+    @ObservedObject var viewModel: BattleViewModel
+    @Environment(\.colorScheme) var colorScheme
+
+    // MARK: - Theme Colors
+    private var leftAccentColor: Color { .blue }
+    private var rightAccentColor: Color { .orange }
 
     var body: some View {
-        NavigationView { // Use NavigationView for title and potential toolbar items
-            VStack(spacing: 20) {
-                // Title
-                Text("🤺 Model Battle")
-                    .font(.largeTitle.bold())
-                    .padding(.bottom, 5)
+        VStack(spacing: 0) {
+            headerView
+                .padding(.bottom, 1) // Small separation
 
-                // Model Comparison Section
-                HStack(alignment: .top, spacing: 15) {
-                    // Left Model
-                    modelResponseCard(
-                        modelName: $selectedLeftModel,
-                        responseText: $leftResponse,
-                        isLeft: true,
-                        isStreaming: isStreaming
-                    )
-                    .frame(maxWidth: .infinity)
+            Divider() // Visually separates header from content
 
-                    // Right Model
-                    modelResponseCard(
-                        modelName: $selectedRightModel,
-                        responseText: $rightResponse,
-                        isLeft: false,
-                        isStreaming: isStreaming
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal)
+            battleArenaView
+                .layoutPriority(1) // Takes up available space
 
-                // Prompt Input
-                HStack {
-                    TextField("Enter your prompt...", text: $promptInput)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.accentColor.opacity(0.5), lineWidth: 1)
-                        )
-                        .disabled(isStreaming) // Disable input during streaming
-                }
-                .padding(.horizontal)
-
-                // Action Button (Battle / Streaming)
-                if isStreaming {
-                    ProgressView("Streaming responses...")
-                        .progressViewStyle(.circular)
-                        .padding()
-                        .transition(.opacity) // Smooth transition
-                } else {
-                    Button {
-                        Task {
-                            await performBattle()
-                        }
-                    } label: {
-                        Text("Battle!")
-                            .font(.headline)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(promptInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.availableModels.count < 2 ? Color.gray.opacity(0.5) : Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
-                    .disabled(promptInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.availableModels.count < 2)
-                    .padding(.horizontal)
-                    .transition(.opacity) // Smooth transition
-                }
-
-                // Voting Buttons
-                if !leftResponse.isEmpty && !rightResponse.isEmpty && !isStreaming {
-                    HStack(spacing: 20) {
-                        VoteButton(label: "Left Wins", color: .green) { vote(winner: selectedLeftModel) }
-                        VoteButton(label: "Right Wins", color: .blue) { vote(winner: selectedRightModel) }
-                    }
-                    .padding(.top, 10)
-                    .padding(.horizontal)
-                }
-
-                Spacer()
-            }
-            .animation(.easeInOut(duration: 0.3), value: isStreaming) // Apply animation to state changes
-            
+            inputAreaView
         }
-        .onAppear {
-            // Ensure selected models are valid, or set defaults if available
-            if viewModel.availableModels.count > 0 {
-                if !viewModel.availableModels.contains(selectedLeftModel) {
-                    selectedLeftModel = viewModel.availableModels.first ?? "gemma3:4b"
-                }
-                if viewModel.availableModels.count > 1 && !viewModel.availableModels.contains(selectedRightModel) {
-                    selectedRightModel = viewModel.availableModels[1] // Use second model as default if available
-                } else if viewModel.availableModels.count == 1 {
-                    selectedRightModel = viewModel.availableModels.first! // Fallback if only one model
-                } else if viewModel.availableModels.isEmpty {
-                    selectedRightModel = "gemma3:12b" // Fallback if no models
-                }
-            }
+        .background(Material.regular) // More macOS-like background
+        .frame(minWidth: 800, minHeight: 600) // Typical window size
+        .task {
+            await viewModel.fetchAvailableModels()
         }
     }
 
-    // MARK: - Helper Views
+    // MARK: - Header View
+    private var headerView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("AI Duel Arena")
+                    .font(.title2.weight(.semibold))
+                Text("Pit two AI models against each other in a battle of wits.")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            // Potentially add a "Clear Battle" or "Settings" button here later
+            Button {
+                viewModel.leftMessages.removeAll()
+                viewModel.rightMessages.removeAll()
+                viewModel.promptInput = ""
+            } label: {
+                Label("New Duel", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(viewModel.isStreaming)
+        }
+        .padding()
+        .background(Material.regular)
+    }
 
-    @ViewBuilder
-    private func modelResponseCard(modelName: Binding<String>, responseText: Binding<String>, isLeft: Bool, isStreaming: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Model", selection: modelName) {
+    // MARK: - Battle Arena View
+    private var battleArenaView: some View {
+        HStack(spacing: 0) {
+            modelColumnView(
+                modelName: $viewModel.selectedLeftModel,
+                messages: viewModel.leftMessages,
+                accentColor: leftAccentColor,
+                side: .left,
+                isStreaming: viewModel.isStreaming && !viewModel.rightMessages.isEmpty // Stream indicator only if this side is active
+            )
+
+            Divider()
+                .overlay(
+                    Text("VS")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 4)
+                        .background(Material.regular)
+                        .foregroundColor(.secondary)
+                )
+
+            modelColumnView(
+                modelName: $viewModel.selectedRightModel,
+                messages: viewModel.rightMessages,
+                accentColor: rightAccentColor,
+                side: .right,
+                isStreaming: viewModel.isStreaming && !viewModel.leftMessages.isEmpty
+            )
+        }
+    }
+
+    // MARK: - Model Column View
+    private func modelColumnView(
+        modelName: Binding<String>,
+        messages: [ChatMessage],
+        accentColor: Color,
+        side: BattleSide,
+        isStreaming: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            modelHeader(modelName: modelName, accentColor: accentColor)
+            responseArea(messages: messages, accentColor: accentColor, modelDisplayName: modelName.wrappedValue)
+            if !messages.isEmpty && !viewModel.isStreaming { // Show vote button only if there are messages and not streaming
+                voteButton(for: side, modelName: modelName.wrappedValue, accentColor: accentColor)
+                    .padding(.vertical)
+            }
+        }
+        .overlay(
+            isStreaming ?
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(accentColor.opacity(0.8), lineWidth: 2)
+                    .padding(1) // To avoid clipping
+                : nil
+        )
+        .animation(.easeInOut, value: isStreaming)
+    }
+
+    // MARK: - Model Header
+    private func modelHeader(modelName: Binding<String>, accentColor: Color) -> some View {
+        HStack {
+            // Use a generic icon or model-specific one if available
+            Image(systemName: modelName.wrappedValue.contains("GPT") ? "brain.head.profile" : (modelName.wrappedValue.contains("Claude") ? "bubble.left.and.bubble.right" : "cpu"))
+                .foregroundColor(accentColor)
+                .font(.title3)
+
+            Picker(modelName.wrappedValue, selection: modelName) {
                 ForEach(viewModel.availableModels, id: \.self) { model in
                     Text(model).tag(model)
                 }
             }
-            .pickerStyle(MenuPickerStyle())
-            .font(.headline)
-            .tint(isLeft ? .purple : .orange) // Distinct tint for each picker
+            .pickerStyle(.menu) // Or .popUpButton for a more classic macOS feel
+            .labelsHidden()
+            .frame(minWidth: 150) // Ensure picker has enough space
 
-            ZStack(alignment: .topLeading) { // Used for placeholder
-                if responseText.wrappedValue.isEmpty {
-                    Text(isStreaming ? "Generating response..." : "Model response will appear here.")
-                        .foregroundColor(.gray)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 4)
-                        .allowsHitTesting(false) // Allows clicks to pass through to TextEditor
+            Spacer()
+        }
+        .padding()
+        .background(Material.ultraThin) // Slightly different material for header within column
+        .overlay(Rectangle().frame(height: 1).foregroundColor(Color.gray.opacity(0.2)), alignment: .bottom) // Subtle divider
+    }
+    
+    // MARK: - Response Area
+    private func responseArea(messages: [ChatMessage], accentColor: Color, modelDisplayName: String) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    if messages.isEmpty {
+                        if viewModel.isStreaming {
+                            VStack {
+                                ProgressView()
+                                    .padding(.bottom, 5)
+                                Text("\(modelDisplayName) is thinking...")
+                                    .font(.callout)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .padding()
+                        } else {
+                            emptyStateView(modelName: modelDisplayName)
+                        }
+                    } else {
+                        ForEach(messages) { message in
+                            MessageBubble(message: message)
+                        }
+                    }
                 }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading) // Ensure content aligns left
+            }
+            .onChange(of: messages.count) { _, _ in scrollToBottom(proxy: proxy, messages: messages) }
+            .onChange(of: messages.last?.content) { _, _ in scrollToBottom(proxy: proxy, messages: messages) }
+        }
+        .frame(maxHeight: .infinity) // Allow it to grow
+    }
 
-                TextEditor(text: responseText)
+    private func scrollToBottom(proxy: ScrollViewProxy, messages: [ChatMessage]) {
+        if let lastId = messages.last?.id {
+            withAnimation(.spring(duration: 0.3)) {
+                proxy.scrollTo(lastId, anchor: .bottom)
+            }
+        }
+    }
+    
+    private func emptyStateView(modelName: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "moon.stars.fill") // More thematic icon
+                .font(.system(size: 40))
+                .foregroundColor(.secondary.opacity(0.6))
+            Text("Responses from \(modelName) will appear here.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+        .padding(40)
+    }
+
+    // MARK: - Vote Button
+    private func voteButton(for side: BattleSide, modelName: String, accentColor: Color) -> some View {
+        Button {
+            viewModel.vote(winnerModel: modelName)
+        } label: {
+            Label("Declare \(modelName) Winner", systemImage: "crown.fill")
+                .font(.headline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(accentColor)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain) // Removes default button chrome to let our background shine
+        .shadow(color: .black.opacity(0.1), radius: 3, y: 2)
+        .disabled(viewModel.isStreaming)
+    }
+
+    // MARK: - Input Area View
+    private var inputAreaView: some View {
+        VStack(spacing: 8) {
+            if viewModel.isStreaming {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("AI models are generating responses...")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 8)
+            }
+
+            HStack(alignment: .bottom, spacing: 12) {
+                TextEditor(text: $viewModel.promptInput)
                     .font(.body)
-                    .frame(minHeight: 180, maxHeight: .infinity)
-                    .scrollContentBackground(.hidden) // Make TextEditor background transparent
-                    .background(Color.clear)
-                    .disabled(true) // Make TextEditor read-only
+                    .frame(minHeight: 40, maxHeight: 120) // More flexible height
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Material.ultraThinMaterial) // Use material for TextEditor background
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .disabled(viewModel.isStreaming)
+
+                battleButton
             }
         }
         .padding()
-        .background(Color.clear) // Clear background for the whole card
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.primary.opacity(0.05)) // Subtle background fill
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2) // Soft shadow
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(isStreaming ? (isLeft ? Color.purple : Color.orange) : Color.gray.opacity(0.3), lineWidth: isStreaming ? 2 : 1) // Highlight border when streaming
-                )
-        )
-        .padding(.vertical, 5) // Add some vertical padding for the card itself
+        .background(Material.regular.shadow(.drop(color: .black.opacity(0.1), radius: 5, y: -2))) // Shadow on top edge
     }
 
-    // MARK: - Action Functions
-
-    func performBattle() async {
-        isStreaming = true
-        leftResponse = ""
-        rightResponse = ""
-
-        let userMessage = ChatMessage(sender: .user, content: promptInput)
-
-        await withTaskGroup(of: Void.self) { group in
-            // Task for the left model
-            group.addTask {
-                do {
-                    print("📡 Starting LEFT stream: \(await selectedLeftModel)")
-                    let stream = try await viewModel.chatService.sendStream(
-                        messages: [userMessage],
-                        model: selectedLeftModel,
-                        systemPrompt: nil,
-                        attachedImages: []
-                    )
-                    for try await token in stream {
-                        await MainActor.run {
-                            leftResponse += token
-                        }
-                    }
-                } catch {
-                    print("❌ LEFT battle error: \(error)")
-                    await MainActor.run {
-                        leftResponse = "Error from \(selectedLeftModel): \(error.localizedDescription)"
-                    }
-                }
+    // MARK: - Battle Button
+    private var battleButton: some View {
+        Button {
+            Task {
+                await viewModel.performBattle()
             }
-
-            // Task for the right model
-            group.addTask {
-                do {
-                    print("📡 Starting RIGHT stream: \(await selectedRightModel)")
-                    let stream = try await viewModel.chatService.sendStream(
-                        messages: [userMessage],
-                        model: selectedRightModel,
-                        systemPrompt: nil,
-                        attachedImages: []
-                    )
-                    for try await token in stream {
-                        await MainActor.run {
-                            rightResponse += token
-                        }
-                    }
-                } catch {
-                    print("❌ RIGHT battle error: \(error)")
-                    await MainActor.run {
-                        rightResponse = "Error from \(selectedRightModel): \(error.localizedDescription)"
-                    }
-                }
-            }
-        }
-        isStreaming = false
-    }
-
-    func vote(winner: String) {
-        print("✅ Voted for: \(winner)")
-        // TODO: Implement actual voting logic (e.g., save to UserDefaults or a database)
-        // For now, clear responses for a new battle.
-        promptInput = ""
-        leftResponse = ""
-        rightResponse = ""
-    }
-}
-
-// MARK: - Reusable Vote Button Component
-
-struct VoteButton: View {
-    let label: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label(label, systemImage: "hand.thumbsup.fill")
+        } label: {
+            Label("Send", systemImage: "paperplane.fill")
                 .font(.headline)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 15)
-                .background(color.opacity(0.8))
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .shadow(color: color.opacity(0.3), radius: 5, x: 0, y: 3)
+                .padding(.horizontal)
+                .frame(height: 40) // Match typical TextEditor single line height
         }
-        .buttonStyle(.plain) // Use .plain to remove default button styling
+        .buttonStyle(.borderedProminent) // Standard prominent button style
+        .tint( (viewModel.promptInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isStreaming) ? .gray : .accentColor)
+        .disabled(viewModel.promptInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isStreaming)
     }
 }

@@ -10,20 +10,24 @@ import SwiftUI
 final class AppRouter {
     static let shared = AppRouter()
 
-    private var sharedViewModel: ChatViewModel?
-
+    private var chatViewModel: ChatViewModel?
+    private var battleViewModel: BattleViewModel?
+    
     @MainActor
     func rootView() -> some View {
-        if sharedViewModel == nil {
-            sharedViewModel = AppDI.makeChatViewModel()
+        if chatViewModel == nil {
+            chatViewModel = AppDI.makeChatViewModel()
         }
-
-        let viewModel = sharedViewModel!
+        if battleViewModel == nil {
+            battleViewModel = AppDI.makeBattleViewModel()
+        }
+        let chatViewModel = chatViewModel!
+        let bettleViewModel = battleViewModel!
 
         return NavigationSplitView {
-            SidebarView(viewModel: viewModel)
+            SidebarView(viewModel: chatViewModel)
         } detail: {
-            ChatView(viewModel: viewModel)
+            ChatView(chatViewModel: chatViewModel, battleViewModel: bettleViewModel)
         }
     }
 }
