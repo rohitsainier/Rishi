@@ -69,15 +69,7 @@ struct BattleView: View {
                 side: .left,
                 isStreaming: viewModel.isStreaming && !viewModel.rightMessages.isEmpty // Stream indicator only if this side is active
             )
-
-            Divider()
-                .overlay(
-                    Text("VS")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 4)
-                        .background(Material.regular)
-                        .foregroundColor(.secondary)
-                )
+            .padding()
 
             modelColumnView(
                 modelName: $viewModel.selectedRightModel,
@@ -86,6 +78,7 @@ struct BattleView: View {
                 side: .right,
                 isStreaming: viewModel.isStreaming && !viewModel.leftMessages.isEmpty
             )
+            .padding()
         }
     }
 
@@ -100,19 +93,53 @@ struct BattleView: View {
         VStack(spacing: 0) {
             modelHeader(modelName: modelName, accentColor: accentColor)
             responseArea(messages: messages, accentColor: accentColor, modelDisplayName: modelName.wrappedValue)
-            if !messages.isEmpty && !viewModel.isStreaming { // Show vote button only if there are messages and not streaming
+            
+            if !messages.isEmpty && !viewModel.isStreaming {
+                // Show vote button only if there are messages and not streaming
                 voteButton(for: side, modelName: modelName.wrappedValue, accentColor: accentColor)
                     .padding(.vertical)
             }
         }
         .overlay(
             isStreaming ?
+            AnyView(AnimatedBorderView(accentColor: accentColor)) :
+            AnyView(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(accentColor.opacity(0.8), lineWidth: 2)
-                    .padding(1) // To avoid clipping
-                : nil
+                    .stroke(accentColor.opacity(0.4), lineWidth: 2)
+                    .padding(1)
+            )
         )
-        .animation(.easeInOut, value: isStreaming)
+    }
+
+    // MARK: - Animated Border View
+    private struct AnimatedBorderView: View {
+        let accentColor: Color
+        @State private var animationProgress: CGFloat = 0
+        
+        var body: some View {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: accentColor.opacity(0.1), location: 0.0),
+                            .init(color: accentColor.opacity(0.2), location: 0.1),
+                            .init(color: accentColor.opacity(0.3), location: 0.3),
+                            .init(color: accentColor.opacity(0.4), location: 0.5),
+                            .init(color: accentColor.opacity(0.5), location: 1.0)
+                        ]),
+                        center: .center,
+                        startAngle: .degrees(animationProgress * 360),
+                        endAngle: .degrees((animationProgress * 360) + 360.0)
+                    ),
+                    lineWidth: 2
+                )
+                .padding(1)
+                .onAppear {
+                    withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                        animationProgress = 1.0
+                    }
+                }
+        }
     }
 
     // MARK: - Model Header
@@ -204,7 +231,6 @@ struct BattleView: View {
                 .font(.headline)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .frame(maxWidth: .infinity)
                 .background(accentColor)
                 .foregroundColor(.white)
                 .cornerRadius(8)
@@ -228,20 +254,15 @@ struct BattleView: View {
                 .padding(.top, 8)
             }
 
-            HStack(alignment: .bottom, spacing: 12) {
-                TextEditor(text: $viewModel.promptInput)
-                    .font(.body)
-                    .frame(minHeight: 40, maxHeight: 120) // More flexible height
-                    .padding(8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Material.ultraThinMaterial) // Use material for TextEditor background
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+            HStack(alignment: .center, spacing: 12) {
+                TextField("Ask something...", text: $viewModel.promptInput)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .disabled(viewModel.isStreaming)
+                    .onSubmit {
+                        Task {
+                            await viewModel.performBattle()
+                        }
+                    }
 
                 battleButton
             }
@@ -259,8 +280,7 @@ struct BattleView: View {
         } label: {
             Label("Send", systemImage: "paperplane.fill")
                 .font(.headline)
-                .padding(.horizontal)
-                .frame(height: 40) // Match typical TextEditor single line height
+                .padding(.vertical, 2)
         }
         .buttonStyle(.borderedProminent) // Standard prominent button style
         .tint( (viewModel.promptInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isStreaming) ? .gray : .accentColor)
