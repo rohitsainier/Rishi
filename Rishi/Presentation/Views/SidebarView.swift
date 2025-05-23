@@ -11,11 +11,22 @@ struct SidebarView: View {
     @ObservedObject var viewModel: ChatViewModel
 
     var body: some View {
-        List(selection: Binding(
-            get: { viewModel.activeScreen == .chat ? viewModel.currentChatId : nil },
-            set: { newId in
-                if let newId = newId {
-                    viewModel.selectChat(id: newId)
+        List(selection: Binding<Set<String>>(
+            get: {
+                if viewModel.activeScreen == .chat, let chatId = viewModel.currentChatId {
+                    return [chatId.uuidString]
+                } else if viewModel.activeScreen == .battle {
+                    return ["battle"]
+                }
+                return []
+            },
+            set: { newSelection in
+                guard let selectedId = newSelection.first else { return }
+                
+                if selectedId == "battle" {
+                    viewModel.activeScreen = .battle
+                } else if let uuid = UUID(uuidString: selectedId) {
+                    viewModel.selectChat(id: uuid)
                     viewModel.activeScreen = .chat
                 }
             }
@@ -37,7 +48,7 @@ struct SidebarView: View {
                         }
                         .buttonStyle(BorderlessButtonStyle())
                     }
-                    .tag(history.id)
+                    .tag(history.id.uuidString)
                     .contentShape(Rectangle()) // Make the whole row clickable
                     .contextMenu {
                         Button("Regenerate Title") {
@@ -48,15 +59,25 @@ struct SidebarView: View {
                     }
                 }
             }
-
-            Section(header: Text("Experiments")) {
-                Button {
-                    viewModel.activeScreen = .battle
-                } label: {
-                    Label("Model Battle", systemImage: "bolt.circle")
-                        .font(.headline)
+            
+            Section(header: Text("Features")) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("AI Battle")
+                            .font(.headline)
+                        Text("Compare models")
+                            .font(.caption)
+                    }
+                    Spacer()
+                    Button {
+                        viewModel.activeScreen = .battle
+                    } label: {
+                        Image(systemName: "figure.archery")
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
                 }
-                .buttonStyle(.plain)
+                .tag("battle")
+                .contentShape(Rectangle()) // Make the whole row clickable
             }
         }
         .toolbar {
