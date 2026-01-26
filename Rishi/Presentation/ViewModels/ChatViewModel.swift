@@ -16,7 +16,7 @@ final class ChatViewModel: ObservableObject {
     @Published var isStreaming = false
     @Published var attachedImages: [NSImage] = []
 
-    @Published var selectedModel: String = "gemma3:4b"
+    @Published var selectedModel: String = "translategemma"
     @Published var availableModels: [String] = []
 
     @Published var chatHistories: [ChatHistory] = []
@@ -27,8 +27,8 @@ final class ChatViewModel: ObservableObject {
     @Published var audioLevel: Float = -160.0
     @Published var isSpeechDetected: Bool = false
     
-    // TTS + enabled by default
-    @Published var ttsEnabled: Bool = true
+    // TTS
+    @Published var ttsEnabled: Bool = false
     @Published var isSpeaking: Bool = false
     @Published var availableVoices: [String] = []
     @Published var selectedVoice: String = ""

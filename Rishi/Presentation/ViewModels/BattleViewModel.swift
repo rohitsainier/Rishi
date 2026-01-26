@@ -19,8 +19,8 @@ final class BattleViewModel: ObservableObject {
     // MARK: - Inputs from UI
     @Published var promptInput: String = ""
     @Published var isStreaming: Bool = false
-    @Published var selectedLeftModel: String = "gemma3:4b"
-    @Published var selectedRightModel: String = "gemma3:12b"
+    @Published var selectedLeftModel: String = "translategemma"
+    @Published var selectedRightModel: String = "translategemma"
     @Published var availableModels: [String]
 
     // MARK: - Dependencies
