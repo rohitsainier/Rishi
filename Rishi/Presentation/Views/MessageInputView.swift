@@ -16,10 +16,14 @@ struct MessageInputView: View {
     
     let isListening: Bool
     let voiceErrorMessage: String?
+    let vadEnabled: Bool
+    let audioLevel: Float
+    let isSpeechDetected: Bool
     
     let onSend: () -> Void
     let onStop: () -> Void
     let onToggleMic: () -> Void
+    let onToggleVAD: () -> Void
     let onImportImages: ([NSImage]) -> Void
     
     @State private var isImporting = false
@@ -34,6 +38,7 @@ struct MessageInputView: View {
                             onSend()
                         }
                     }
+                
                 if isStreaming {
                     ProgressView().scaleEffect(0.6)
                         .frame(width: 6, height: 6)
@@ -60,15 +65,36 @@ struct MessageInputView: View {
                     }
                 }
                 
-                // 🎙 Microphone
-                Button(action: {
-                    onToggleMic()
-                }) {
-                    Image(systemName: isListening ? "mic.fill" : "mic")
-                        .foregroundColor(isListening ? .red : .primary)
+                // 🎙 VAD Visualizer
+                if isListening {
+                    VADVisualizer(
+                        audioLevel: audioLevel,
+                        isListening: isListening,
+                        isSpeechDetected: isSpeechDetected
+                    )
                 }
-                .help(isListening ? "Stop Listening" : "Start Voice Input")
+                
+                // 🎚 VAD Toggle
+                Button(action: {
+                    onToggleVAD()
+                }) {
+                    Image(systemName: vadEnabled ? "waveform.circle.fill" : "waveform.circle")
+                        .foregroundColor(vadEnabled ? .green : .secondary)
+                }
+                .help(vadEnabled ? "VAD Mode (Auto-detect)" : "Manual Mode (Push-to-talk)")
                 .buttonStyle(.plain)
+                
+                // 🎙 Microphone (manual mode only)
+                if !vadEnabled {
+                    Button(action: {
+                        onToggleMic()
+                    }) {
+                        Image(systemName: isListening ? "mic.fill" : "mic")
+                            .foregroundColor(isListening ? .red : .primary)
+                    }
+                    .help(isListening ? "Stop Listening" : "Start Voice Input")
+                    .buttonStyle(.plain)
+                }
                 
                 // 🚦 Send / Stop streaming
                 if isStreaming {
@@ -86,12 +112,10 @@ struct MessageInputView: View {
                 }
             }
             
-            // 👂 Voice Input Info
-            Text(isListening
-                  ? "🎙 Listening… speak now"
-                  : "⌨ Click the mic or press space bar to speak.")
+            // 👂 Voice Input Status
+            Text(voiceStatusText)
                 .font(.caption)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(voiceStatusColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             // ⚠️ Show any error
@@ -103,6 +127,27 @@ struct MessageInputView: View {
                     .transition(.opacity)
             }
         }
+    }
+    
+    private var voiceStatusText: String {
+        if vadEnabled {
+            if isListening {
+                return isSpeechDetected ? "🎙 Speaking detected..." : "👂 Listening for voice..."
+            } else {
+                return "🤖 VAD Active - Start speaking to interact"
+            }
+        } else {
+            return isListening
+                ? "🎙 Recording... (Click mic or press space to stop)"
+                : "⌨ Click mic or press space bar to speak"
+        }
+    }
+    
+    private var voiceStatusColor: Color {
+        if vadEnabled {
+            return isSpeechDetected ? .green : .blue
+        }
+        return .accentColor
     }
     
     private func pickImages() {
@@ -117,5 +162,3 @@ struct MessageInputView: View {
         }
     }
 }
-
-

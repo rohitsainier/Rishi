@@ -88,6 +88,9 @@ struct ChatSessionView: View {
                 attachedImages: $viewModel.attachedImages,
                 isListening: viewModel.isListening,
                 voiceErrorMessage: viewModel.voiceErrorMessage,
+                vadEnabled: viewModel.vadEnabled,
+                audioLevel: viewModel.audioLevel,
+                isSpeechDetected: viewModel.isSpeechDetected,
                 onSend: {
                     viewModel.streamMessage(
                         model: viewModel.selectedModel,
@@ -97,6 +100,7 @@ struct ChatSessionView: View {
                 },
                 onStop: { viewModel.stopMessageStreaming() },
                 onToggleMic: { viewModel.toggleMic() },
+                onToggleVAD: { viewModel.toggleVADMode() },
                 onImportImages: { images in viewModel.attachedImages.append(contentsOf: images) }
             )
             .padding()
@@ -104,6 +108,13 @@ struct ChatSessionView: View {
                 KeyboardMonitor {
                     viewModel.toggleMic()
                 }
+            }
+            .onAppear {
+                // Auto-start VAD when view appears
+                viewModel.startVAD()
+            }
+            .onDisappear {
+                viewModel.stopVAD()
             }
         }
         .navigationTitle(viewModel.currentChatTitle)

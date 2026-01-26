@@ -21,6 +21,11 @@ final class ChatViewModel: ObservableObject {
 
     @Published var chatHistories: [ChatHistory] = []
     @Published var currentChatId: UUID?
+    
+    // VAD mode enabled by default
+    @Published var vadEnabled: Bool = true
+    @Published var audioLevel: Float = -160.0
+    @Published var isSpeechDetected: Bool = false
 
     // MARK: - Computed Properties
     var currentChatTitle: String {
@@ -212,6 +217,17 @@ final class ChatViewModel: ObservableObject {
         speechService.errorMessagePublisher
             .receive(on: RunLoop.main)
             .assign(to: &$voiceErrorMessage)
+        
+        // ✅ Bind VAD-specific publishers
+            if let speechManager = speechService as? SpeechRecognizerManager {
+                speechManager.audioLevelPublisher
+                    .receive(on: RunLoop.main)
+                    .assign(to: &$audioLevel)
+                
+                speechManager.isSpeechDetectedPublisher
+                    .receive(on: RunLoop.main)
+                    .assign(to: &$isSpeechDetected)
+            }
     }
     
     private func updateChatTitle(chatId: UUID, newTitle: String) {
@@ -225,6 +241,26 @@ final class ChatViewModel: ObservableObject {
     func toggleMic() { speechService.toggleListening() }
     func stopMic() { speechService.stopListening() }
     func startMic() { speechService.startListening() }
+    
+    func toggleVADMode() {
+        vadEnabled.toggle()
+        if let manager = speechService as? SpeechRecognizerManager {
+            manager.setMode(vadEnabled ? .vad : .manual)
+        }
+    }
+
+    func startVAD() {
+        guard vadEnabled else { return }
+        if let manager = speechService as? SpeechRecognizerManager {
+            manager.startVADMonitoring()
+        }
+    }
+
+    func stopVAD() {
+        if let manager = speechService as? SpeechRecognizerManager {
+            manager.stopVADMonitoring()
+        }
+    }
 
     // MARK: - Model Fetching
     func fetchAvailableModels() async {
