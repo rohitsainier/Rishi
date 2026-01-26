@@ -22,10 +22,17 @@ final class ChatViewModel: ObservableObject {
     @Published var chatHistories: [ChatHistory] = []
     @Published var currentChatId: UUID?
     
-    // VAD mode enabled by default
+    // VAD + enabled by default
     @Published var vadEnabled: Bool = true
     @Published var audioLevel: Float = -160.0
     @Published var isSpeechDetected: Bool = false
+    
+    // TTS + enabled by default
+    @Published var ttsEnabled: Bool = true
+    @Published var isSpeaking: Bool = false
+    @Published var availableVoices: [String] = []
+    @Published var selectedVoice: String = ""
+    @Published var speechRate: Float = 0.5
 
     // MARK: - Computed Properties
     var currentChatTitle: String {
@@ -73,6 +80,7 @@ final class ChatViewModel: ObservableObject {
     let chatService: ChatServiceProtocol
     private let speechService: SpeechServiceProtocol
     private let historyService: ChatHistoryServiceProtocol
+    private var ttsService: TTSServiceProtocol
 
     // MARK: - Private State
     private var streamingTask: Task<Void, Never>?
@@ -83,11 +91,13 @@ final class ChatViewModel: ObservableObject {
     init(
         chatService: ChatServiceProtocol,
         speechService: SpeechServiceProtocol,
-        historyService: ChatHistoryServiceProtocol
+        historyService: ChatHistoryServiceProtocol,
+        ttsService: TTSServiceProtocol
     ) {
         self.chatService = chatService
         self.speechService = speechService
         self.historyService = historyService
+        self.ttsService = ttsService
 
         let prompts: [SystemPrompt] = [
             .init(text: "You are a helpful assistant.", category: "General"),
@@ -110,6 +120,7 @@ final class ChatViewModel: ObservableObject {
         currentChatId = historyService.currentChatId ?? historyService.histories.first?.id ?? createNewChat().id
 
         bindSpeechService()
+        bindTTSService()
     }
 
     // MARK: - History Management
@@ -140,6 +151,11 @@ final class ChatViewModel: ObservableObject {
     func streamMessage(model: String, systemPrompt: String?, attachedImages: [Data] = []) {
         let trimmedInput = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty || !self.attachedImages.isEmpty else { return }
+
+        // Stop any ongoing speech
+        if ttsEnabled {
+            ttsService.stopSpeaking()
+        }
 
         let userMessage = ChatMessage(
             sender: .user,
@@ -173,6 +189,12 @@ final class ChatViewModel: ObservableObject {
                     streamed += token
                     updateAssistantMessage(content: streamed)
                 }
+                
+                // ✅ Speak the final response
+                if ttsEnabled && !streamed.isEmpty {
+                    ttsService.speak(streamed)
+                }
+                
             } catch {
                 updateAssistantMessage(content: "⚠️ \(error.localizedDescription)")
             }
@@ -180,6 +202,7 @@ final class ChatViewModel: ObservableObject {
             isStreaming = false
         }
     }
+
 
     func stopMessageStreaming() {
         chatService.stopStreaming()
@@ -230,6 +253,24 @@ final class ChatViewModel: ObservableObject {
             }
     }
     
+    private func bindTTSService() {
+        ttsService.isSpeakingPublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$isSpeaking)
+        
+        ttsService.availableVoicesPublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$availableVoices)
+        
+        ttsService.selectedVoicePublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$selectedVoice)
+        
+        ttsService.speechRatePublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$speechRate)
+    }
+    
     private func updateChatTitle(chatId: UUID, newTitle: String) {
         // Update in service first
         historyService.updateChatTitle(for: chatId, newTitle: newTitle)
@@ -260,6 +301,33 @@ final class ChatViewModel: ObservableObject {
         if let manager = speechService as? SpeechRecognizerManager {
             manager.stopVADMonitoring()
         }
+    }
+    
+    func toggleTTS() {
+        ttsEnabled.toggle()
+        if !ttsEnabled {
+            ttsService.stopSpeaking()
+        }
+    }
+
+    func stopSpeaking() {
+        ttsService.stopSpeaking()
+    }
+
+    func pauseSpeaking() {
+        ttsService.pauseSpeaking()
+    }
+
+    func continueSpeaking() {
+        ttsService.continueSpeaking()
+    }
+
+    func setVoice(_ voice: String) {
+        ttsService.selectedVoice = voice
+    }
+
+    func setSpeechRate(_ rate: Float) {
+        ttsService.speechRate = rate
     }
 
     // MARK: - Model Fetching

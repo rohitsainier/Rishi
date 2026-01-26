@@ -2,8 +2,6 @@
 //  ChatSessionView.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 04/05/25.
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -12,6 +10,7 @@ struct ChatSessionView: View {
     @ObservedObject var viewModel: ChatViewModel
     @State private var showPromptPicker = false
     @State private var showModelPicker = false
+    
     var body: some View {
         VStack {
             // Header
@@ -21,16 +20,14 @@ struct ChatSessionView: View {
                 selectedModel: viewModel.selectedModel,
                 selectedChatType: viewModel.selectedSystemPrompt.text
             )
-            // ✅ Sheet for System Prompt
             .sheet(isPresented: $showPromptPicker) {
                 SystemPromptSheetView(viewModel: viewModel, isPresented: $showPromptPicker)
             }
-            
-            // ✅ Sheet for Model Picker
             .sheet(isPresented: $showModelPicker) {
                 ModelPickerSheetView(viewModel: viewModel, isPresented: $showModelPicker)
             }
             
+            // Messages
             ScrollViewReader { proxy in
                 ScrollView {
                     ForEach(viewModel.messages) { message in
@@ -91,6 +88,8 @@ struct ChatSessionView: View {
                 vadEnabled: viewModel.vadEnabled,
                 audioLevel: viewModel.audioLevel,
                 isSpeechDetected: viewModel.isSpeechDetected,
+                ttsEnabled: viewModel.ttsEnabled,  // ✅ Add this
+                isSpeaking: viewModel.isSpeaking,  // ✅ Add this
                 onSend: {
                     viewModel.streamMessage(
                         model: viewModel.selectedModel,
@@ -101,22 +100,33 @@ struct ChatSessionView: View {
                 onStop: { viewModel.stopMessageStreaming() },
                 onToggleMic: { viewModel.toggleMic() },
                 onToggleVAD: { viewModel.toggleVADMode() },
+                onToggleTTS: { viewModel.toggleTTS() },  // ✅ Add this
+                onStopSpeaking: { viewModel.stopSpeaking() },  // ✅ Add this
                 onImportImages: { images in viewModel.attachedImages.append(contentsOf: images) }
             )
             .padding()
             .background {
                 KeyboardMonitor {
-                    viewModel.toggleMic()
+                    if !viewModel.vadEnabled {
+                        viewModel.toggleMic()
+                    }
                 }
             }
             .onAppear {
-                // Auto-start VAD when view appears
                 viewModel.startVAD()
             }
             .onDisappear {
                 viewModel.stopVAD()
+                viewModel.stopSpeaking()
             }
         }
         .navigationTitle(viewModel.currentChatTitle)
+        .onAppear {
+            // Auto-start VAD when view appears
+            viewModel.startVAD()
+        }
+        .onDisappear {
+            viewModel.stopVAD()
+        }
     }
 }

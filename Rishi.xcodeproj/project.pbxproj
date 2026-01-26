@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		09B783A52F27C25100CD82F3 /* VADManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B783A42F27C25000CD82F3 /* VADManager.swift */; };
 		09B783A72F27C29400CD82F3 /* VADVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B783A62F27C29300CD82F3 /* VADVisualizer.swift */; };
+		09B783A92F27C7ED00CD82F3 /* TTSServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B783A82F27C7ED00CD82F3 /* TTSServiceProtocol.swift */; };
+		09B783AB2F27C80800CD82F3 /* TTSManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B783AA2F27C80800CD82F3 /* TTSManager.swift */; };
+		09B783AD2F27C99800CD82F3 /* TTSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B783AC2F27C99700CD82F3 /* TTSSettingsView.swift */; };
 		917FF5F22DC74B7F00843CBB /* RishiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917FF5F12DC74B7F00843CBB /* RishiApp.swift */; };
 		917FF5F62DC74B8000843CBB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917FF5F52DC74B8000843CBB /* Assets.xcassets */; };
 		917FF5F92DC74B8000843CBB /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 917FF5F82DC74B8000843CBB /* Preview Assets.xcassets */; };
@@ -48,6 +51,9 @@
 /* Begin PBXFileReference section */
 		09B783A42F27C25000CD82F3 /* VADManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADManager.swift; sourceTree = "<group>"; };
 		09B783A62F27C29300CD82F3 /* VADVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VADVisualizer.swift; sourceTree = "<group>"; };
+		09B783A82F27C7ED00CD82F3 /* TTSServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSServiceProtocol.swift; sourceTree = "<group>"; };
+		09B783AA2F27C80800CD82F3 /* TTSManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSManager.swift; sourceTree = "<group>"; };
+		09B783AC2F27C99700CD82F3 /* TTSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSSettingsView.swift; sourceTree = "<group>"; };
 		917FF5EE2DC74B7F00843CBB /* Rishi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rishi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		917FF5F12DC74B7F00843CBB /* RishiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RishiApp.swift; sourceTree = "<group>"; };
 		917FF5F52DC74B8000843CBB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -200,6 +206,7 @@
 		917FF60C2DC74DE300843CBB /* Protocols */ = {
 			isa = PBXGroup;
 			children = (
+				09B783A82F27C7ED00CD82F3 /* TTSServiceProtocol.swift */,
 				917FF60D2DC74DEF00843CBB /* ChatServiceProtocol.swift */,
 				917FF6232DC7694100843CBB /* SpeechServiceProtocol.swift */,
 				917FF63D2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift */,
@@ -241,6 +248,7 @@
 		917FF61C2DC74E9200843CBB /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				09B783AC2F27C99700CD82F3 /* TTSSettingsView.swift */,
 				09B783A62F27C29300CD82F3 /* VADVisualizer.swift */,
 				917FF6312DC780A200843CBB /* SystemPromptSheetView.swift */,
 				917FF61D2DC74E9E00843CBB /* MessageBubble.swift */,
@@ -253,6 +261,7 @@
 		917FF6252DC7698900843CBB /* Manager */ = {
 			isa = PBXGroup;
 			children = (
+				09B783AA2F27C80800CD82F3 /* TTSManager.swift */,
 				09B783A42F27C25000CD82F3 /* VADManager.swift */,
 				917FF6262DC7699B00843CBB /* SpeechRecognizerManager.swift */,
 			);
@@ -356,6 +365,7 @@
 			files = (
 				917FF63A2DC7D42A00843CBB /* ChatSessionView.swift in Sources */,
 				09B783A52F27C25100CD82F3 /* VADManager.swift in Sources */,
+				09B783AB2F27C80800CD82F3 /* TTSManager.swift in Sources */,
 				917FF6412DC7D7F000843CBB /* ChatHistoryService.swift in Sources */,
 				917FF6082DC74DAA00843CBB /* Router.swift in Sources */,
 				917FF6062DC74D8F00843CBB /* Dependencies.swift in Sources */,
@@ -369,12 +379,14 @@
 				917FF62E2DC77E3800843CBB /* Keyboard.swift in Sources */,
 				917FF63E2DC7D7CB00843CBB /* ChatHistoryServiceProtocol.swift in Sources */,
 				91ADD1D52DDAE54500AD1F04 /* SVGWebView.swift in Sources */,
+				09B783A92F27C7ED00CD82F3 /* TTSServiceProtocol.swift in Sources */,
 				91ADD1D42DDAE54500AD1F04 /* RichWebView.swift in Sources */,
 				917FF6322DC780A200843CBB /* SystemPromptSheetView.swift in Sources */,
 				91A2E5B32DE0771200F1C9BB /* LeaderboardViewModel.swift in Sources */,
 				917FF6342DC784F700843CBB /* ModelPickerSheetView.swift in Sources */,
 				09B783A72F27C29400CD82F3 /* VADVisualizer.swift in Sources */,
 				91A2E5AB2DDFAB3A00F1C9BB /* Battle.swift in Sources */,
+				09B783AD2F27C99800CD82F3 /* TTSSettingsView.swift in Sources */,
 				917FF61E2DC74E9E00843CBB /* MessageBubble.swift in Sources */,
 				91A2E5AD2DDFAC4000F1C9BB /* BattleView.swift in Sources */,
 				917FF6192DC74E6300843CBB /* SidebarView.swift in Sources */,

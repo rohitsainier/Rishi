@@ -20,10 +20,16 @@ struct MessageInputView: View {
     let audioLevel: Float
     let isSpeechDetected: Bool
     
+    // ✅ TTS Properties
+    let ttsEnabled: Bool
+    let isSpeaking: Bool
+    
     let onSend: () -> Void
     let onStop: () -> Void
     let onToggleMic: () -> Void
     let onToggleVAD: () -> Void
+    let onToggleTTS: () -> Void  
+    let onStopSpeaking: () -> Void
     let onImportImages: ([NSImage]) -> Void
     
     @State private var isImporting = false
@@ -74,6 +80,31 @@ struct MessageInputView: View {
                     )
                 }
                 
+                // ✅ 🔊 TTS Toggle & Stop
+                HStack(spacing: 4) {
+                    Button(action: {
+                        onToggleTTS()
+                    }) {
+                        Image(systemName: ttsEnabled ? "speaker.wave.3.fill" : "speaker.slash.fill")
+                            .foregroundColor(ttsEnabled ? .green : .secondary)
+                    }
+                    .help(ttsEnabled ? "TTS Enabled (Click to disable)" : "TTS Disabled (Click to enable)")
+                    .buttonStyle(.plain)
+                    
+                    // Stop speaking button (only visible when speaking)
+                    if isSpeaking {
+                        Button(action: {
+                            onStopSpeaking()
+                        }) {
+                            Image(systemName: "stop.circle.fill")
+                                .foregroundColor(.red)
+                        }
+                        .help("Stop Speaking")
+                        .buttonStyle(.plain)
+                        .transition(.scale)
+                    }
+                }
+                
                 // 🎚 VAD Toggle
                 Button(action: {
                     onToggleVAD()
@@ -113,10 +144,26 @@ struct MessageInputView: View {
             }
             
             // 👂 Voice Input Status
-            Text(voiceStatusText)
-                .font(.caption)
-                .foregroundColor(voiceStatusColor)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) {
+                Text(voiceStatusText)
+                    .font(.caption)
+                    .foregroundColor(voiceStatusColor)
+                
+                // ✅ Speaking indicator
+                if isSpeaking {
+                    HStack(spacing: 4) {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .foregroundColor(.green)
+                        Text("Speaking...")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    .transition(.opacity)
+                }
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // ⚠️ Show any error
             if let error = voiceErrorMessage {
@@ -127,6 +174,7 @@ struct MessageInputView: View {
                     .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: isSpeaking)
     }
     
     private var voiceStatusText: String {
