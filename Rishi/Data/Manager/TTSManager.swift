@@ -2,20 +2,21 @@
 //  TTSManager.swift
 //  Rishi
 //
-//  Text-to-Speech Manager using AVSpeechSynthesizer
+//  Thread-safe TTS Manager using Swift Actors
 //
 
 import Foundation
 import AVFoundation
 import Combine
 
+@MainActor
 final class TTSManager: NSObject, TTSServiceProtocol {
     
     // MARK: - Published Properties
     @Published var isSpeaking: Bool = false
     @Published var availableVoices: [String] = []
     @Published var selectedVoice: String = ""
-    @Published var speechRate: Float = 0.5 // 0.0 (slow) to 1.0 (fast)
+    @Published var speechRate: Float = 0.5
     
     public var isSpeakingPublisher: Published<Bool>.Publisher { $isSpeaking }
     public var availableVoicesPublisher: Published<[String]>.Publisher { $availableVoices }
@@ -52,11 +53,9 @@ final class TTSManager: NSObject, TTSServiceProtocol {
     private func loadAvailableVoices() {
         let voices = AVSpeechSynthesisVoice.speechVoices()
         
-        // Filter for English voices and sort by quality
         let englishVoices = voices
             .filter { $0.language.hasPrefix("en-") }
             .sorted { voice1, voice2 in
-                // Prioritize enhanced/premium voices
                 if voice1.quality.rawValue != voice2.quality.rawValue {
                     return voice1.quality.rawValue > voice2.quality.rawValue
                 }
@@ -83,14 +82,12 @@ final class TTSManager: NSObject, TTSServiceProtocol {
     }
     
     private func selectDefaultVoice() {
-        // Try to use preferred voice from config
         if let preferred = config.preferredVoiceIdentifier,
            availableVoices.contains(preferred) {
             selectedVoice = preferred
             return
         }
         
-        // Look for premium/enhanced voices
         let premiumVoices = ["Samantha (US)", "Alex (US)", "Daniel (UK)", "Karen (Australia)"]
         for voice in premiumVoices {
             if availableVoices.contains(voice) {
@@ -99,18 +96,13 @@ final class TTSManager: NSObject, TTSServiceProtocol {
             }
         }
         
-        // Fallback to first available
         selectedVoice = availableVoices.first ?? ""
     }
     
     // MARK: - Speech Control
+    
+    /// ✅ All operations on @MainActor - no priority inversion
     func speak(_ text: String) {
-        // Stop any current speech
-        if synthesizer.isSpeaking {
-            synthesizer.stopSpeaking(at: .immediate)
-        }
-        
-        // Clean the text (remove markdown, code blocks, etc.)
         let cleanedText = cleanTextForSpeech(text)
         
         guard !cleanedText.isEmpty else {
@@ -118,21 +110,23 @@ final class TTSManager: NSObject, TTSServiceProtocol {
             return
         }
         
+        // Stop any current speech
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
+        
         let utterance = AVSpeechUtterance(string: cleanedText)
         
-        // Apply voice if selected
         if let voice = voiceIdentifiers[selectedVoice] {
             utterance.voice = voice
         }
         
-        // Apply speech parameters
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * speechRate
         utterance.pitchMultiplier = config.defaultPitch
         utterance.volume = config.defaultVolume
         
-        // Speak
-        synthesizer.speak(utterance)
         isSpeaking = true
+        synthesizer.speak(utterance)
         
         print("🔊 Speaking: \(cleanedText.prefix(50))...")
     }
@@ -154,55 +148,47 @@ final class TTSManager: NSObject, TTSServiceProtocol {
     private func cleanTextForSpeech(_ text: String) -> String {
         var cleaned = text
         
-        // Remove markdown code blocks
         cleaned = cleaned.replacingOccurrences(
             of: "```[\\s\\S]*?```",
             with: "",
             options: .regularExpression
         )
         
-        // Remove inline code
         cleaned = cleaned.replacingOccurrences(
             of: "`[^`]+`",
             with: "",
             options: .regularExpression
         )
         
-        // Remove SVG/HTML tags
         cleaned = cleaned.replacingOccurrences(
             of: "<[^>]+>",
             with: "",
             options: .regularExpression
         )
         
-        // Remove URLs
         cleaned = cleaned.replacingOccurrences(
             of: "https?://[^\\s]+",
             with: "link",
             options: .regularExpression
         )
         
-        // Remove markdown headers
         cleaned = cleaned.replacingOccurrences(
             of: "#{1,6}\\s+",
             with: "",
             options: .regularExpression
         )
         
-        // Remove markdown bold/italic
         cleaned = cleaned.replacingOccurrences(of: "**", with: "")
         cleaned = cleaned.replacingOccurrences(of: "*", with: "")
         cleaned = cleaned.replacingOccurrences(of: "__", with: "")
         cleaned = cleaned.replacingOccurrences(of: "_", with: "")
         
-        // Remove extra whitespace
         cleaned = cleaned.replacingOccurrences(
             of: "\\s+",
             with: " ",
             options: .regularExpression
         )
         
-        // Trim
         cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
         
         return cleaned
@@ -211,30 +197,31 @@ final class TTSManager: NSObject, TTSServiceProtocol {
 
 // MARK: - AVSpeechSynthesizerDelegate
 extension TTSManager: AVSpeechSynthesizerDelegate {
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async {
+    
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        Task { @MainActor in
             self.isSpeaking = true
         }
     }
     
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in
             self.isSpeaking = false
         }
     }
     
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor in
             self.isSpeaking = false
         }
     }
     
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
         // isSpeaking remains true when paused
     }
     
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
-        DispatchQueue.main.async {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
+        Task { @MainActor in
             self.isSpeaking = true
         }
     }

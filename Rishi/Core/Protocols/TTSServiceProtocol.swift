@@ -5,8 +5,10 @@
 //  Text-to-Speech Service Protocol
 //
 
+
 import Foundation
 
+@MainActor
 protocol TTSServiceProtocol {
     var isSpeakingPublisher: Published<Bool>.Publisher { get }
     var availableVoicesPublisher: Published<[String]>.Publisher { get }
