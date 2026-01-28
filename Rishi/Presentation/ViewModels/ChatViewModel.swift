@@ -2,8 +2,6 @@
 //  ChatViewModel.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 04/05/25.
-//
 
 import SwiftUI
 import Combine
@@ -22,13 +20,14 @@ final class ChatViewModel: ObservableObject {
     @Published var chatHistories: [ChatHistory] = []
     @Published var currentChatId: UUID?
     
-    // VAD + enabled by default
+    // VAD
     @Published var vadEnabled: Bool = true
     @Published var audioLevel: Float = -160.0
     @Published var isSpeechDetected: Bool = false
+    @Published var isVADPaused: Bool = false  // ✅ NEW: Track VAD pause state
     
     // TTS
-    @Published var ttsEnabled: Bool = false
+    @Published var ttsEnabled: Bool = true  // ✅ Changed default to true for testing
     @Published var isSpeaking: Bool = false
     @Published var availableVoices: [String] = []
     @Published var selectedVoice: String = ""
@@ -86,6 +85,7 @@ final class ChatViewModel: ObservableObject {
     private var streamingTask: Task<Void, Never>?
     private var currentStreamingMessageId: UUID?
     private var cancellables = Set<AnyCancellable>()
+    private var resumeVADWorkItem: DispatchWorkItem?  // ✅ NEW: For delayed VAD resume
 
     // MARK: - Init
     init(
@@ -121,6 +121,7 @@ final class ChatViewModel: ObservableObject {
 
         bindSpeechService()
         bindTTSService()
+        setupInterruptHandler()  // ✅ NEW
     }
 
     // MARK: - History Management
@@ -152,8 +153,8 @@ final class ChatViewModel: ObservableObject {
         let trimmedInput = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty || !self.attachedImages.isEmpty else { return }
 
-        // Stop any ongoing speech
-        if ttsEnabled {
+        // ✅ Stop any ongoing speech immediately
+        if ttsEnabled && isSpeaking {
             ttsService.stopSpeaking()
         }
 
@@ -203,7 +204,6 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-
     func stopMessageStreaming() {
         chatService.stopStreaming()
         streamingTask?.cancel()
@@ -227,7 +227,7 @@ final class ChatViewModel: ObservableObject {
         chatHistories = historyService.histories
     }
 
-    // MARK: - Speech
+    // MARK: - Speech Service Binding
     private func bindSpeechService() {
         speechService.isListeningPublisher
             .receive(on: RunLoop.main)
@@ -241,22 +241,38 @@ final class ChatViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .assign(to: &$voiceErrorMessage)
         
-        // ✅ Bind VAD-specific publishers
-            if let speechManager = speechService as? SpeechRecognizerManager {
-                speechManager.audioLevelPublisher
-                    .receive(on: RunLoop.main)
-                    .assign(to: &$audioLevel)
-                
-                speechManager.isSpeechDetectedPublisher
-                    .receive(on: RunLoop.main)
-                    .assign(to: &$isSpeechDetected)
-            }
+        if let speechManager = speechService as? SpeechRecognizerManager {
+            speechManager.audioLevelPublisher
+                .receive(on: RunLoop.main)
+                .assign(to: &$audioLevel)
+            
+            speechManager.isSpeechDetectedPublisher
+                .receive(on: RunLoop.main)
+                .assign(to: &$isSpeechDetected)
+            
+            // ✅ NEW: Bind VAD pause state
+            speechManager.isVADPausedPublisher
+                .receive(on: RunLoop.main)
+                .assign(to: &$isVADPaused)
+        }
     }
     
+    // MARK: - TTS Service Binding
     private func bindTTSService() {
+        // ✅ UPDATED: Use sink to handle TTS state changes
         ttsService.isSpeakingPublisher
             .receive(on: RunLoop.main)
-            .assign(to: &$isSpeaking)
+            .sink { [weak self] speaking in
+                guard let self = self else { return }
+                self.isSpeaking = speaking
+                
+                if speaking {
+                    self.handleTTSStarted()
+                } else {
+                    self.handleTTSStopped()
+                }
+            }
+            .store(in: &cancellables)
         
         ttsService.availableVoicesPublisher
             .receive(on: RunLoop.main)
@@ -271,18 +287,80 @@ final class ChatViewModel: ObservableObject {
             .assign(to: &$speechRate)
     }
     
+    // ✅ NEW: Setup interrupt handler
+    private func setupInterruptHandler() {
+        if let speechManager = speechService as? SpeechRecognizerManager {
+            speechManager.onInterruptDetected = { [weak self] in
+                guard let self = self else { return }
+                
+                // Only handle interrupt if TTS is actually speaking
+                if self.isSpeaking {
+                    print("🛑 User interrupted TTS - stopping speech")
+                    self.stopSpeaking()
+                }
+            }
+        }
+    }
+    
+    // ✅ NEW: Handle TTS started - pause VAD to prevent feedback
+    private func handleTTSStarted() {
+        guard vadEnabled else { return }
+        
+        print("🔊 TTS started - pausing VAD")
+        
+        // Cancel any pending resume
+        resumeVADWorkItem?.cancel()
+        resumeVADWorkItem = nil
+        
+        // Pause VAD to prevent capturing TTS audio
+        if let manager = speechService as? SpeechRecognizerManager {
+            manager.pauseVAD()
+            // Enable interrupt monitoring so user can still interrupt
+            manager.enableInterruptMonitoring()
+        }
+    }
+    
+    // ✅ NEW: Handle TTS stopped - resume VAD after delay
+    private func handleTTSStopped() {
+        guard vadEnabled else { return }
+        
+        print("🔇 TTS stopped - scheduling VAD resume")
+        
+        // Cancel any pending resume
+        resumeVADWorkItem?.cancel()
+        
+        // Resume VAD after a short delay (to avoid capturing TTS tail audio)
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            
+            // Double-check TTS is still not speaking
+            guard !self.isSpeaking else {
+                print("⚠️ TTS started again - not resuming VAD")
+                return
+            }
+            
+            print("▶️ Resuming VAD after TTS")
+            if let manager = self.speechService as? SpeechRecognizerManager {
+                manager.disableInterruptMonitoring()
+                manager.resumeVAD()
+            }
+        }
+        
+        resumeVADWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+    }
+    
     private func updateChatTitle(chatId: UUID, newTitle: String) {
-        // Update in service first
         historyService.updateChatTitle(for: chatId, newTitle: newTitle)
-        // Refresh local state
         chatHistories = historyService.histories
-
     }
 
+    // MARK: - Mic Control
     func toggleMic() { speechService.toggleListening() }
     func stopMic() { speechService.stopListening() }
     func startMic() { speechService.startListening() }
     
+    // MARK: - VAD Control
     func toggleVADMode() {
         vadEnabled.toggle()
         if let manager = speechService as? SpeechRecognizerManager {
@@ -292,6 +370,11 @@ final class ChatViewModel: ObservableObject {
 
     func startVAD() {
         guard vadEnabled else { return }
+        // Don't start if TTS is speaking
+        guard !isSpeaking else {
+            print("⚠️ Not starting VAD - TTS is speaking")
+            return
+        }
         if let manager = speechService as? SpeechRecognizerManager {
             manager.startVADMonitoring()
         }
@@ -303,6 +386,7 @@ final class ChatViewModel: ObservableObject {
         }
     }
     
+    // MARK: - TTS Control
     func toggleTTS() {
         ttsEnabled.toggle()
         if !ttsEnabled {
@@ -312,6 +396,8 @@ final class ChatViewModel: ObservableObject {
 
     func stopSpeaking() {
         ttsService.stopSpeaking()
+        // Resume VAD immediately when manually stopped
+        handleTTSStopped()
     }
 
     func pauseSpeaking() {
@@ -347,12 +433,10 @@ final class ChatViewModel: ObservableObject {
         guard let chat = chatHistories.first(where: { $0.id == chatId }),
               chat.name.hasPrefix("New Chat") || chat.name.hasPrefix("Chat on"),
               !chat.messages.isEmpty else {
-            print("❌ Cannot generate title: chat not found, already named, or empty.")
             return
         }
 
         let recentMessages = Array(chat.messages.prefix(3))
-
         var summaryMessages: [ChatMessage] = recentMessages
         summaryMessages.append(
             ChatMessage(sender: .user, content: "Summarize this conversation in 3-5 words.")

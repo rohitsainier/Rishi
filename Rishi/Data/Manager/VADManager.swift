@@ -2,9 +2,6 @@
 //  VADManager.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 26/01/26.
-//
-
 
 import Foundation
 import AVFoundation
@@ -13,22 +10,25 @@ import Combine
 final class VADManager: NSObject {
     // MARK: - Configuration
     struct VADConfig {
-        var silenceThreshold: Float = -40.0      // dB level to consider as silence
-        var speechThreshold: Float = -35.0        // dB level to consider as speech
-        var silenceDuration: TimeInterval = 1.5   // Seconds of silence before stopping
-        var minSpeechDuration: TimeInterval = 0.3 // Minimum speech duration to trigger
-        var preSpeechBuffer: TimeInterval = 0.2   // Capture audio before speech detected
+        var silenceThreshold: Float = -40.0
+        var speechThreshold: Float = -35.0
+        var silenceDuration: TimeInterval = 1.5
+        var minSpeechDuration: TimeInterval = 0.3
+        var preSpeechBuffer: TimeInterval = 0.2
+        var interruptThreshold: Float = -25.0  // ✅ NEW: Louder threshold for interrupt detection
     }
     
     // MARK: - Published State
     @Published var isSpeechDetected: Bool = false
     @Published var isListening: Bool = false
     @Published var currentAudioLevel: Float = -160.0
+    @Published var isPaused: Bool = false  // ✅ NEW: Pause state
     
     // MARK: - Callbacks
     var onSpeechStart: (() -> Void)?
     var onSpeechEnd: (() -> Void)?
     var onAudioLevel: ((Float) -> Void)?
+    var onLoudSoundDetected: (() -> Void)?  // ✅ NEW: For interrupt detection during TTS
     
     // MARK: - Private Properties
     private let audioEngine = AVAudioEngine()
@@ -36,6 +36,7 @@ final class VADManager: NSObject {
     private var silenceTimer: Timer?
     private var speechStartTime: Date?
     private var isSpeechActive = false
+    private var isInterruptMonitoringMode = false  // ✅ NEW: Special mode during TTS
     
     // MARK: - Initializer
     init(config: VADConfig = VADConfig()) {
@@ -53,6 +54,7 @@ final class VADManager: NSObject {
         do {
             try audioEngine.start()
             isListening = true
+            isPaused = false
             print("✅ VAD monitoring started")
         } catch {
             print("❌ VAD failed to start: \(error.localizedDescription)")
@@ -65,10 +67,46 @@ final class VADManager: NSObject {
         silenceTimer?.invalidate()
         silenceTimer = nil
         isListening = false
+        isPaused = false
         isSpeechDetected = false
         isSpeechActive = false
         speechStartTime = nil
+        isInterruptMonitoringMode = false
         print("🛑 VAD monitoring stopped")
+    }
+    
+    // ✅ NEW: Pause VAD processing (keeps audio engine running for interrupt detection)
+    func pauseMonitoring() {
+        guard isListening else { return }
+        isPaused = true
+        
+        // Reset speech state
+        isSpeechActive = false
+        isSpeechDetected = false
+        silenceTimer?.invalidate()
+        silenceTimer = nil
+        speechStartTime = nil
+        
+        print("⏸️ VAD paused (still monitoring for interrupts)")
+    }
+    
+    // ✅ NEW: Resume VAD processing
+    func resumeMonitoring() {
+        guard isListening else { return }
+        isPaused = false
+        isInterruptMonitoringMode = false
+        print("▶️ VAD resumed")
+    }
+    
+    // ✅ NEW: Enable interrupt monitoring mode (used during TTS)
+    func enableInterruptMonitoring() {
+        isInterruptMonitoringMode = true
+        print("🎤 Interrupt monitoring enabled")
+    }
+    
+    // ✅ NEW: Disable interrupt monitoring mode
+    func disableInterruptMonitoring() {
+        isInterruptMonitoringMode = false
     }
     
     func updateConfig(_ newConfig: VADConfig) {
@@ -78,14 +116,13 @@ final class VADManager: NSObject {
     // MARK: - Private Methods
     private func setupAudioSession() {
         // macOS doesn't need AVAudioSession configuration like iOS
-        // But we ensure permissions are handled elsewhere
     }
     
     private func setupAudioTap() {
         let inputNode = audioEngine.inputNode
         let format = inputNode.inputFormat(forBus: 0)
         
-        inputNode.removeTap(onBus: 0) // Remove existing tap if any
+        inputNode.removeTap(onBus: 0)
         
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             guard let self = self else { return }
@@ -99,7 +136,6 @@ final class VADManager: NSObject {
         let channelDataValue = channelData.pointee
         let frameLength = Int(buffer.frameLength)
         
-        // Calculate RMS (Root Mean Square) for audio level
         var sum: Float = 0.0
         for i in 0..<frameLength {
             let sample = channelDataValue[i]
@@ -107,34 +143,47 @@ final class VADManager: NSObject {
         }
         
         let rms = sqrt(sum / Float(frameLength))
-        let avgPower = 20 * log10(rms) // Convert to dB
-        let audioLevel = max(-160.0, avgPower) // Clamp minimum
+        let avgPower = 20 * log10(rms)
+        let audioLevel = max(-160.0, avgPower)
         
         DispatchQueue.main.async {
             self.currentAudioLevel = audioLevel
             self.onAudioLevel?(audioLevel)
-            self.detectVoiceActivity(audioLevel: audioLevel)
+            
+            // ✅ Check for interrupt during TTS playback
+            if self.isInterruptMonitoringMode {
+                self.checkForInterrupt(audioLevel: audioLevel)
+            }
+            
+            // ✅ Only process VAD if not paused
+            if !self.isPaused {
+                self.detectVoiceActivity(audioLevel: audioLevel)
+            }
+        }
+    }
+    
+    // ✅ NEW: Check if user is trying to interrupt TTS
+    private func checkForInterrupt(audioLevel: Float) {
+        // Use a higher threshold to detect intentional speech over TTS
+        if audioLevel > config.interruptThreshold {
+            print("🎤 Interrupt detected! Audio level: \(audioLevel)")
+            onLoudSoundDetected?()
         }
     }
     
     private func detectVoiceActivity(audioLevel: Float) {
-        // Speech detected
         if audioLevel > config.speechThreshold {
             handleSpeechDetected()
-        }
-        // Silence detected
-        else if audioLevel < config.silenceThreshold {
+        } else if audioLevel < config.silenceThreshold {
             handleSilenceDetected()
         }
     }
     
     private func handleSpeechDetected() {
-        // Cancel any pending silence timer
         silenceTimer?.invalidate()
         silenceTimer = nil
         
         if !isSpeechActive {
-            // Mark speech as started
             speechStartTime = Date()
             isSpeechActive = true
             
@@ -142,7 +191,6 @@ final class VADManager: NSObject {
                 self.isSpeechDetected = true
             }
             
-            // Notify speech start
             DispatchQueue.main.async {
                 self.onSpeechStart?()
             }
@@ -152,7 +200,6 @@ final class VADManager: NSObject {
     private func handleSilenceDetected() {
         guard isSpeechActive else { return }
         
-        // Start silence timer if not already running
         if silenceTimer == nil {
             silenceTimer = Timer.scheduledTimer(withTimeInterval: config.silenceDuration, repeats: false) { [weak self] _ in
                 self?.handleSpeechEnded()
@@ -163,12 +210,10 @@ final class VADManager: NSObject {
     private func handleSpeechEnded() {
         guard isSpeechActive else { return }
         
-        // Check if speech was long enough
         if let startTime = speechStartTime {
             let duration = Date().timeIntervalSince(startTime)
             
             if duration >= config.minSpeechDuration {
-                // Valid speech detected
                 DispatchQueue.main.async {
                     self.isSpeechDetected = false
                     self.onSpeechEnd?()
@@ -176,7 +221,6 @@ final class VADManager: NSObject {
             }
         }
         
-        // Reset state
         isSpeechActive = false
         speechStartTime = nil
         silenceTimer?.invalidate()

@@ -2,21 +2,21 @@
 //  SpeechServiceProtocol.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 04/05/25.
-//
 
 import Foundation
 
 protocol SpeechServiceProtocol {
-    // Expose read + publishers
+    // Publishers
     var isListeningPublisher: Published<Bool>.Publisher { get }
     var transcribedTextPublisher: Published<String>.Publisher { get }
     var errorMessagePublisher: Published<String?>.Publisher { get }
     
+    // State
     var transcribedText: String { get }
     var isListening: Bool { get }
     var errorMessage: String? { get }
     
+    // Control
     func requestAuthorization()
     func toggleListening()
     func startListening()

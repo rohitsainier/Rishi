@@ -5,15 +5,16 @@
 //  VAD Audio Level Visualizer
 //
 
+
 import SwiftUI
 
 struct VADVisualizer: View {
     let audioLevel: Float
     let isListening: Bool
     let isSpeechDetected: Bool
+    var isPaused: Bool = false  // ✅ NEW: Optional paused state
     
     private var normalizedLevel: CGFloat {
-        // Convert dB (-160 to 0) to 0...1 range
         let minDB: Float = -60.0
         let maxDB: Float = -10.0
         let clamped = max(minDB, min(maxDB, audioLevel))
@@ -30,9 +31,15 @@ struct VADVisualizer: View {
             }
         }
         .frame(height: 20)
+        .opacity(isPaused ? 0.4 : 1.0)  // ✅ Dim when paused
     }
     
     private func barHeight(for index: Int) -> CGFloat {
+        // ✅ Show minimal bars when paused
+        if isPaused {
+            return 4
+        }
+        
         let threshold = CGFloat(index) / 5.0
         let baseHeight: CGFloat = 4
         let maxHeight: CGFloat = 20
@@ -44,6 +51,11 @@ struct VADVisualizer: View {
     }
     
     private func barColor(for index: Int) -> Color {
+        // ✅ Show orange when paused
+        if isPaused {
+            return .orange.opacity(0.5)
+        }
+        
         if !isListening {
             return .gray.opacity(0.3)
         }

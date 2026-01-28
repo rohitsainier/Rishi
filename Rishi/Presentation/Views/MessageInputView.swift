@@ -2,9 +2,6 @@
 //  MessageInputView.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 04/05/25.
-//
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -20,7 +17,7 @@ struct MessageInputView: View {
     let audioLevel: Float
     let isSpeechDetected: Bool
     
-    // ✅ TTS Properties
+    // TTS Properties
     let ttsEnabled: Bool
     let isSpeaking: Bool
     
@@ -28,7 +25,7 @@ struct MessageInputView: View {
     let onStop: () -> Void
     let onToggleMic: () -> Void
     let onToggleVAD: () -> Void
-    let onToggleTTS: () -> Void  
+    let onToggleTTS: () -> Void
     let onStopSpeaking: () -> Void
     let onImportImages: ([NSImage]) -> Void
     
@@ -51,7 +48,7 @@ struct MessageInputView: View {
                         .padding(.horizontal, 6)
                 }
                 
-                // 🖼 Image picker with count badge
+                // Image picker
                 ZStack(alignment: .topTrailing) {
                     Button {
                         pickImages()
@@ -71,7 +68,7 @@ struct MessageInputView: View {
                     }
                 }
                 
-                // 🎙 VAD Visualizer
+                // VAD Visualizer
                 if isListening {
                     VADVisualizer(
                         audioLevel: audioLevel,
@@ -80,7 +77,7 @@ struct MessageInputView: View {
                     )
                 }
                 
-                // ✅ 🔊 TTS Toggle & Stop
+                // TTS Toggle & Stop
                 HStack(spacing: 4) {
                     Button(action: {
                         onToggleTTS()
@@ -91,7 +88,7 @@ struct MessageInputView: View {
                     .help(ttsEnabled ? "TTS Enabled (Click to disable)" : "TTS Disabled (Click to enable)")
                     .buttonStyle(.plain)
                     
-                    // Stop speaking button (only visible when speaking)
+                    // Stop speaking button
                     if isSpeaking {
                         Button(action: {
                             onStopSpeaking()
@@ -105,7 +102,7 @@ struct MessageInputView: View {
                     }
                 }
                 
-                // 🎚 VAD Toggle
+                // VAD Toggle
                 Button(action: {
                     onToggleVAD()
                 }) {
@@ -115,7 +112,7 @@ struct MessageInputView: View {
                 .help(vadEnabled ? "VAD Mode (Auto-detect)" : "Manual Mode (Push-to-talk)")
                 .buttonStyle(.plain)
                 
-                // 🎙 Microphone (manual mode only)
+                // Manual mic button
                 if !vadEnabled {
                     Button(action: {
                         onToggleMic()
@@ -127,7 +124,7 @@ struct MessageInputView: View {
                     .buttonStyle(.plain)
                 }
                 
-                // 🚦 Send / Stop streaming
+                // Send / Stop streaming
                 if isStreaming {
                     Button("Stop") {
                         onStop()
@@ -143,18 +140,18 @@ struct MessageInputView: View {
                 }
             }
             
-            // 👂 Voice Input Status
+            // Voice Input Status
             HStack(spacing: 8) {
                 Text(voiceStatusText)
                     .font(.caption)
                     .foregroundColor(voiceStatusColor)
                 
-                // ✅ Speaking indicator
+                // Speaking indicator with interrupt hint
                 if isSpeaking {
                     HStack(spacing: 4) {
                         Image(systemName: "speaker.wave.2.fill")
                             .foregroundColor(.green)
-                        Text("Speaking...")
+                        Text("Speaking... (speak to interrupt)")  // ✅ Updated hint
                             .font(.caption)
                             .foregroundColor(.green)
                     }
@@ -165,7 +162,7 @@ struct MessageInputView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            // ⚠️ Show any error
+            // Error message
             if let error = voiceErrorMessage {
                 Text(error)
                     .foregroundColor(.orange)
@@ -178,6 +175,11 @@ struct MessageInputView: View {
     }
     
     private var voiceStatusText: String {
+        // ✅ Updated to show paused state
+        if isSpeaking {
+            return "🔊 Speaking... (VAD paused to prevent echo)"
+        }
+        
         if vadEnabled {
             if isListening {
                 return isSpeechDetected ? "🎙 Speaking detected..." : "👂 Listening for voice..."
@@ -192,6 +194,9 @@ struct MessageInputView: View {
     }
     
     private var voiceStatusColor: Color {
+        if isSpeaking {
+            return .orange  // ✅ Different color when paused for TTS
+        }
         if vadEnabled {
             return isSpeechDetected ? .green : .blue
         }

@@ -2,8 +2,6 @@
 //  SpeechRecognizerManager.swift
 //  Rishi
 //
-//  Created by Rohit Saini on 04/05/25.
-//
 
 import SwiftUI
 import AVFoundation
@@ -13,8 +11,8 @@ import Combine
 final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
     // MARK: - VAD Mode
     enum RecognitionMode {
-        case manual      // Push-to-talk (original behavior)
-        case vad         // Automatic voice detection
+        case manual
+        case vad
     }
     
     // MARK: - Properties
@@ -28,15 +26,20 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
     @Published var transcribedText: String = ""
     @Published var isListening: Bool = false
     @Published var errorMessage: String?
-    @Published var currentMode: RecognitionMode = .vad  // Default to VAD mode
+    @Published var currentMode: RecognitionMode = .vad
     @Published var audioLevel: Float = -160.0
-    @Published var isSpeechDetected: Bool = false  // ✅ Now public
+    @Published var isSpeechDetected: Bool = false
+    @Published var isVADPaused: Bool = false  // ✅ NEW: Track VAD pause state
     
     public var isListeningPublisher: Published<Bool>.Publisher { $isListening }
     public var transcribedTextPublisher: Published<String>.Publisher { $transcribedText }
     public var errorMessagePublisher: Published<String?>.Publisher { $errorMessage }
-    public var audioLevelPublisher: Published<Float>.Publisher { $audioLevel }  // ✅ Expose this
-    public var isSpeechDetectedPublisher: Published<Bool>.Publisher { $isSpeechDetected }  // ✅ Expose this
+    public var audioLevelPublisher: Published<Float>.Publisher { $audioLevel }
+    public var isSpeechDetectedPublisher: Published<Bool>.Publisher { $isSpeechDetected }
+    public var isVADPausedPublisher: Published<Bool>.Publisher { $isVADPaused }  // ✅ NEW
+
+    // ✅ NEW: Callback for interrupt detection
+    var onInterruptDetected: (() -> Void)?
 
     override init() {
         super.init()
@@ -70,7 +73,8 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
             silenceThreshold: -40.0,
             speechThreshold: -35.0,
             silenceDuration: 1.5,
-            minSpeechDuration: 0.3
+            minSpeechDuration: 0.3,
+            interruptThreshold: -25.0  // ✅ NEW: Louder threshold for interrupts
         ))
         
         vadManager?.onSpeechStart = { [weak self] in
@@ -91,10 +95,22 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
             }
         }
         
-        // ✅ Bind VAD manager's published properties
+        // ✅ NEW: Handle interrupt detection
+        vadManager?.onLoudSoundDetected = { [weak self] in
+            DispatchQueue.main.async {
+                self?.onInterruptDetected?()
+            }
+        }
+        
         vadManager?.$isSpeechDetected
             .receive(on: DispatchQueue.main)
             .assign(to: \.isSpeechDetected, on: self)
+            .store(in: &cancellables)
+        
+        // ✅ NEW: Bind pause state
+        vadManager?.$isPaused
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isVADPaused, on: self)
             .store(in: &cancellables)
     }
     
@@ -124,13 +140,32 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
             stopListening()
         }
     }
+    
+    // ✅ NEW: Pause VAD (used during TTS)
+    func pauseVAD() {
+        vadManager?.pauseMonitoring()
+    }
+    
+    // ✅ NEW: Resume VAD (used after TTS)
+    func resumeVAD() {
+        vadManager?.resumeMonitoring()
+    }
+    
+    // ✅ NEW: Enable interrupt monitoring during TTS
+    func enableInterruptMonitoring() {
+        vadManager?.enableInterruptMonitoring()
+    }
+    
+    // ✅ NEW: Disable interrupt monitoring
+    func disableInterruptMonitoring() {
+        vadManager?.disableInterruptMonitoring()
+    }
 
-    // MARK: - Manual Control (original methods)
+    // MARK: - Manual Control
     func toggleListening() {
         if currentMode == .manual {
             isListening ? stopListening() : startListening()
         } else {
-            // In VAD mode, toggle monitoring
             if vadManager?.isListening == true {
                 stopVADMonitoring()
             } else {
@@ -145,11 +180,9 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
             return
         }
 
-        // Stop any existing task
         recognitionTask?.cancel()
         recognitionTask = nil
         
-        // Reset transcription
         if !isListening {
             transcribedText = ""
         }
@@ -186,7 +219,6 @@ final class SpeechRecognizerManager: NSObject, SpeechServiceProtocol {
             }
 
             if error != nil || (result?.isFinal ?? false) {
-                // Only auto-stop in manual mode
                 if self.currentMode == .manual {
                     self.stopListening()
                 }
