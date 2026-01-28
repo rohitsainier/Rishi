@@ -10,6 +10,7 @@ struct ChatSessionView: View {
     @ObservedObject var viewModel: ChatViewModel
     @State private var showPromptPicker = false
     @State private var showModelPicker = false
+    @State private var showTTSSettings = false  // ✅ NEW
     
     var body: some View {
         VStack {
@@ -25,6 +26,10 @@ struct ChatSessionView: View {
             }
             .sheet(isPresented: $showModelPicker) {
                 ModelPickerSheetView(viewModel: viewModel, isPresented: $showModelPicker)
+            }
+            // ✅ NEW: TTS Settings Sheet
+            .sheet(isPresented: $showTTSSettings) {
+                TTSSettingsView(viewModel: viewModel, isPresented: $showTTSSettings)
             }
             
             // Messages
@@ -88,8 +93,8 @@ struct ChatSessionView: View {
                 vadEnabled: viewModel.vadEnabled,
                 audioLevel: viewModel.audioLevel,
                 isSpeechDetected: viewModel.isSpeechDetected,
-                ttsEnabled: viewModel.ttsEnabled,  // ✅ Add this
-                isSpeaking: viewModel.isSpeaking,  // ✅ Add this
+                ttsEnabled: viewModel.ttsEnabled,
+                isSpeaking: viewModel.isSpeaking,
                 onSend: {
                     viewModel.streamMessage(
                         model: viewModel.selectedModel,
@@ -100,8 +105,9 @@ struct ChatSessionView: View {
                 onStop: { viewModel.stopMessageStreaming() },
                 onToggleMic: { viewModel.toggleMic() },
                 onToggleVAD: { viewModel.toggleVADMode() },
-                onToggleTTS: { viewModel.toggleTTS() },  // ✅ Add this
-                onStopSpeaking: { viewModel.stopSpeaking() },  // ✅ Add this
+                onToggleTTS: { viewModel.toggleTTS() },
+                onStopSpeaking: { viewModel.stopSpeaking() },
+                onOpenTTSSettings: { showTTSSettings = true },  // ✅ NEW
                 onImportImages: { images in viewModel.attachedImages.append(contentsOf: images) }
             )
             .padding()
@@ -122,7 +128,6 @@ struct ChatSessionView: View {
         }
         .navigationTitle(viewModel.currentChatTitle)
         .onAppear {
-            // Auto-start VAD when view appears
             viewModel.startVAD()
         }
         .onDisappear {

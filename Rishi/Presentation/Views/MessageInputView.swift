@@ -3,6 +3,7 @@
 //  Rishi
 //
 
+
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -27,6 +28,7 @@ struct MessageInputView: View {
     let onToggleVAD: () -> Void
     let onToggleTTS: () -> Void
     let onStopSpeaking: () -> Void
+    let onOpenTTSSettings: () -> Void  // ✅ NEW
     let onImportImages: ([NSImage]) -> Void
     
     @State private var isImporting = false
@@ -77,15 +79,27 @@ struct MessageInputView: View {
                     )
                 }
                 
-                // TTS Toggle & Stop
+                // ✅ TTS Controls Group
                 HStack(spacing: 4) {
+                    // TTS Toggle
                     Button(action: {
                         onToggleTTS()
                     }) {
                         Image(systemName: ttsEnabled ? "speaker.wave.3.fill" : "speaker.slash.fill")
                             .foregroundColor(ttsEnabled ? .green : .secondary)
                     }
-                    .help(ttsEnabled ? "TTS Enabled (Click to disable)" : "TTS Disabled (Click to enable)")
+                    .help(ttsEnabled ? "TTS Enabled" : "TTS Disabled")
+                    .buttonStyle(.plain)
+                    
+                    // ✅ TTS Settings Button
+                    Button(action: {
+                        onOpenTTSSettings()
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                    .help("TTS Settings")
                     .buttonStyle(.plain)
                     
                     // Stop speaking button
@@ -101,6 +115,12 @@ struct MessageInputView: View {
                         .transition(.scale)
                     }
                 }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.secondary.opacity(0.1))
+                )
                 
                 // VAD Toggle
                 Button(action: {
@@ -146,12 +166,12 @@ struct MessageInputView: View {
                     .font(.caption)
                     .foregroundColor(voiceStatusColor)
                 
-                // Speaking indicator with interrupt hint
+                // Speaking indicator
                 if isSpeaking {
                     HStack(spacing: 4) {
                         Image(systemName: "speaker.wave.2.fill")
                             .foregroundColor(.green)
-                        Text("Speaking... (speak to interrupt)")  // ✅ Updated hint
+                        Text("Speaking... (speak to interrupt)")
                             .font(.caption)
                             .foregroundColor(.green)
                     }
@@ -175,28 +195,25 @@ struct MessageInputView: View {
     }
     
     private var voiceStatusText: String {
-        // ✅ Updated to show paused state
         if isSpeaking {
-            return "🔊 Speaking... (VAD paused to prevent echo)"
+            return "🔊 Speaking... (VAD paused)"
         }
         
         if vadEnabled {
             if isListening {
                 return isSpeechDetected ? "🎙 Speaking detected..." : "👂 Listening for voice..."
             } else {
-                return "🤖 VAD Active - Start speaking to interact"
+                return "🤖 VAD Active - Start speaking"
             }
         } else {
             return isListening
-                ? "🎙 Recording... (Click mic or press space to stop)"
-                : "⌨ Click mic or press space bar to speak"
+                ? "🎙 Recording..."
+                : "⌨ Click mic or press space to speak"
         }
     }
     
     private var voiceStatusColor: Color {
-        if isSpeaking {
-            return .orange  // ✅ Different color when paused for TTS
-        }
+        if isSpeaking { return .orange }
         if vadEnabled {
             return isSpeechDetected ? .green : .blue
         }

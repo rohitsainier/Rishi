@@ -27,11 +27,13 @@ final class ChatViewModel: ObservableObject {
     @Published var isVADPaused: Bool = false  // ✅ NEW: Track VAD pause state
     
     // TTS
-    @Published var ttsEnabled: Bool = true  // ✅ Changed default to true for testing
+    @Published var ttsEnabled: Bool = true
     @Published var isSpeaking: Bool = false
     @Published var availableVoices: [String] = []
     @Published var selectedVoice: String = ""
     @Published var speechRate: Float = 0.5
+    @Published var pitch: Float = 1.0
+    @Published var volume: Float = 1.0
 
     // MARK: - Computed Properties
     var currentChatTitle: String {
@@ -259,7 +261,6 @@ final class ChatViewModel: ObservableObject {
     
     // MARK: - TTS Service Binding
     private func bindTTSService() {
-        // ✅ UPDATED: Use sink to handle TTS state changes
         ttsService.isSpeakingPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] speaking in
@@ -285,6 +286,14 @@ final class ChatViewModel: ObservableObject {
         ttsService.speechRatePublisher
             .receive(on: RunLoop.main)
             .assign(to: &$speechRate)
+        
+        ttsService.pitchPublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$pitch)
+        
+        ttsService.volumePublisher
+            .receive(on: RunLoop.main)
+            .assign(to: &$volume)
     }
     
     // ✅ NEW: Setup interrupt handler
@@ -347,7 +356,7 @@ final class ChatViewModel: ObservableObject {
         }
         
         resumeVADWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
     }
     
     private func updateChatTitle(chatId: UUID, newTitle: String) {
@@ -396,7 +405,6 @@ final class ChatViewModel: ObservableObject {
 
     func stopSpeaking() {
         ttsService.stopSpeaking()
-        // Resume VAD immediately when manually stopped
         handleTTSStopped()
     }
 
@@ -415,6 +423,25 @@ final class ChatViewModel: ObservableObject {
     func setSpeechRate(_ rate: Float) {
         ttsService.speechRate = rate
     }
+
+    func setPitch(_ newPitch: Float) {
+        ttsService.pitch = newPitch
+    }
+
+    func setVolume(_ newVolume: Float) {
+        ttsService.volume = newVolume
+    }
+
+    func previewVoice() {
+        ttsService.previewVoice()
+    }
+
+    func saveTTSSettings() {
+        if let manager = ttsService as? TTSManager {
+            manager.saveSettings()
+        }
+    }
+
 
     // MARK: - Model Fetching
     func fetchAvailableModels() async {

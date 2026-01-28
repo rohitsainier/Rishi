@@ -2,8 +2,9 @@
 //  TTSManager.swift
 //  Rishi
 //
-//  Thread-safe TTS Manager using Swift Actors
+//  Created by Rohit Saini on 04/05/25.
 //
+
 
 import Foundation
 import AVFoundation
@@ -17,15 +18,28 @@ final class TTSManager: NSObject, TTSServiceProtocol {
     @Published var availableVoices: [String] = []
     @Published var selectedVoice: String = ""
     @Published var speechRate: Float = 0.5
+    @Published var pitch: Float = 1.0          // ✅ NEW: 0.5 - 2.0
+    @Published var volume: Float = 1.0         // ✅ NEW: 0.0 - 1.0
     
     public var isSpeakingPublisher: Published<Bool>.Publisher { $isSpeaking }
     public var availableVoicesPublisher: Published<[String]>.Publisher { $availableVoices }
     public var selectedVoicePublisher: Published<String>.Publisher { $selectedVoice }
     public var speechRatePublisher: Published<Float>.Publisher { $speechRate }
+    public var pitchPublisher: Published<Float>.Publisher { $pitch }        // ✅ NEW
+    public var volumePublisher: Published<Float>.Publisher { $volume }      // ✅ NEW
     
     // MARK: - Private Properties
     private let synthesizer = AVSpeechSynthesizer()
+    private let audioQueue = DispatchQueue(label: "tts.audio.queue", qos: .userInitiated)
     private var voiceIdentifiers: [String: AVSpeechSynthesisVoice] = [:]
+    
+    // ✅ UserDefaults keys for persistence
+    private enum SettingsKeys {
+        static let selectedVoice = "tts_selected_voice"
+        static let speechRate = "tts_speech_rate"
+        static let pitch = "tts_pitch"
+        static let volume = "tts_volume"
+    }
     
     // MARK: - Configuration
     struct TTSConfig {
@@ -41,12 +55,54 @@ final class TTSManager: NSObject, TTSServiceProtocol {
     // MARK: - Initializer
     init(config: TTSConfig = TTSConfig()) {
         self.config = config
-        self.speechRate = config.defaultRate
         super.init()
         
         synthesizer.delegate = self
         loadAvailableVoices()
-        selectDefaultVoice()
+        loadSavedSettings()  // ✅ Load persisted settings
+        
+        // If no saved voice, select default
+        if selectedVoice.isEmpty {
+            selectDefaultVoice()
+        }
+    }
+    
+    // MARK: - Settings Persistence
+    
+    private func loadSavedSettings() {
+        let defaults = UserDefaults.standard
+        
+        if let savedVoice = defaults.string(forKey: SettingsKeys.selectedVoice),
+           availableVoices.contains(savedVoice) {
+            selectedVoice = savedVoice
+        }
+        
+        if defaults.object(forKey: SettingsKeys.speechRate) != nil {
+            speechRate = defaults.float(forKey: SettingsKeys.speechRate)
+        } else {
+            speechRate = config.defaultRate
+        }
+        
+        if defaults.object(forKey: SettingsKeys.pitch) != nil {
+            pitch = defaults.float(forKey: SettingsKeys.pitch)
+        } else {
+            pitch = config.defaultPitch
+        }
+        
+        if defaults.object(forKey: SettingsKeys.volume) != nil {
+            volume = defaults.float(forKey: SettingsKeys.volume)
+        } else {
+            volume = config.defaultVolume
+        }
+    }
+    
+    func saveSettings() {
+        let defaults = UserDefaults.standard
+        defaults.set(selectedVoice, forKey: SettingsKeys.selectedVoice)
+        defaults.set(speechRate, forKey: SettingsKeys.speechRate)
+        defaults.set(pitch, forKey: SettingsKeys.pitch)
+        defaults.set(volume, forKey: SettingsKeys.volume)
+        print("💾 TTS settings saved")
     }
     
     // MARK: - Voice Management
@@ -62,8 +118,12 @@ final class TTSManager: NSObject, TTSServiceProtocol {
                 return voice1.name < voice2.name
             }
         
+        voiceIdentifiers.removeAll()
+        availableVoices.removeAll()
+        
         for voice in englishVoices {
-            let displayName = "\(voice.name) (\(voiceLanguageDescription(voice.language)))"
+            let qualityBadge = voice.quality == .enhanced ? "⭐️ " : ""
+            let displayName = "\(qualityBadge)\(voice.name) (\(voiceLanguageDescription(voice.language)))"
             voiceIdentifiers[displayName] = voice
             availableVoices.append(displayName)
         }
@@ -88,7 +148,8 @@ final class TTSManager: NSObject, TTSServiceProtocol {
             return
         }
         
-        let premiumVoices = ["Samantha (US)", "Alex (US)", "Daniel (UK)", "Karen (Australia)"]
+        // Prefer enhanced voices
+        let premiumVoices = ["⭐️ Rishi (India)", "⭐️ Samantha (US)", "⭐️ Alex (US)", "⭐️ Daniel (UK)", "⭐️ Karen (Australia)"]
         for voice in premiumVoices {
             if availableVoices.contains(voice) {
                 selectedVoice = voice
@@ -96,53 +157,96 @@ final class TTSManager: NSObject, TTSServiceProtocol {
             }
         }
         
-        selectedVoice = availableVoices.first ?? ""
+        // Fallback to any Rishi or first available
+        if let rishi = availableVoices.first(where: { $0.contains("Rishi") }) {
+            selectedVoice = rishi
+        } else {
+            selectedVoice = availableVoices.first ?? ""
+        }
+    }
+    
+    // MARK: - Rate Conversion
+    
+    private func convertToUtteranceRate(_ userRate: Float) -> Float {
+        let minRate: Float = 0.4
+        let maxRate: Float = 0.6
+        return minRate + (userRate * (maxRate - minRate))
     }
     
     // MARK: - Speech Control
     
-    /// ✅ All operations on @MainActor - no priority inversion
     func speak(_ text: String) {
         let cleanedText = cleanTextForSpeech(text)
+        guard !cleanedText.isEmpty else { return }
         
-        guard !cleanedText.isEmpty else {
-            print("⚠️ No text to speak after cleaning")
-            return
+        let utterance = createUtterance(for: cleanedText)
+        
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            if self.synthesizer.isSpeaking {
+                self.synthesizer.stopSpeaking(at: .immediate)
+            }
+            
+            self.synthesizer.speak(utterance)
         }
         
-        // Stop any current speech
-        if synthesizer.isSpeaking {
-            synthesizer.stopSpeaking(at: .immediate)
+        isSpeaking = true
+    }
+    
+    func previewVoice() {
+            let text = "Hello! This is a preview of the selected voice."
+
+            let utterance = createUtterance(for: text)
+
+            audioQueue.async { [weak self] in
+                guard let self = self else { return }
+
+                if self.synthesizer.isSpeaking {
+                    self.synthesizer.stopSpeaking(at: .immediate)
+                }
+
+                self.synthesizer.speak(utterance)
+            }
+
+            isSpeaking = true
         }
-        
-        let utterance = AVSpeechUtterance(string: cleanedText)
+    
+    private func createUtterance(for text: String) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: text)
         
         if let voice = voiceIdentifiers[selectedVoice] {
             utterance.voice = voice
         }
         
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * speechRate
-        utterance.pitchMultiplier = config.defaultPitch
-        utterance.volume = config.defaultVolume
+        utterance.rate = convertToUtteranceRate(speechRate)
+        utterance.pitchMultiplier = pitch
+        utterance.volume = volume
+        utterance.preUtteranceDelay = 0.1
+        utterance.postUtteranceDelay = 0.1
         
-        isSpeaking = true
-        synthesizer.speak(utterance)
-        
-        print("🔊 Speaking: \(cleanedText.prefix(50))...")
+        return utterance
     }
     
     func stopSpeaking() {
-        synthesizer.stopSpeaking(at: .immediate)
-        isSpeaking = false
-    }
+            audioQueue.async { [weak self] in
+                self?.synthesizer.stopSpeaking(at: .immediate)
+            }
+
+            isSpeaking = false
+        }
     
     func pauseSpeaking() {
-        synthesizer.pauseSpeaking(at: .word)
-    }
-    
-    func continueSpeaking() {
-        synthesizer.continueSpeaking()
-    }
+            audioQueue.async { [weak self] in
+                self?.synthesizer.pauseSpeaking(at: .word)
+            }
+        }
+
+        func continueSpeaking() {
+            audioQueue.async { [weak self] in
+                self?.synthesizer.continueSpeaking()
+            }
+        }
     
     // MARK: - Text Cleaning
     private func cleanTextForSpeech(_ text: String) -> String {
